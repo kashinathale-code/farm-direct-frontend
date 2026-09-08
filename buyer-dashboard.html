@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Buyer Dashboard - Farm Direct</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="app-body">
+  <nav class="app-nav">
+    <div class="nav-container">
+      <div class="logo">Farm Direct</div>
+      <div class="user-menu">
+        <span class="user-greeting">Welcome, <span id="buyerName"></span></span>
+        <span class="role-badge">Buyer</span>
+        <button id="logoutBtn" class="secondary btn-small">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="dashboard-main">
+    <div class="dashboard-content">
+
+    <h3>Browse Available Crops</h3>
+    <input type="text" id="searchBox" placeholder="Search by crop name...">
+    <div class="filter-row">
+      <input type="number" id="minPrice" placeholder="Min price ₹">
+      <input type="number" id="maxPrice" placeholder="Max price ₹">
+    </div>
+    <div id="cropList"></div>
+
+    <h3>My Orders</h3>
+    <div id="orderList"></div>
+    </div>
+  </main>
+
+  <script src="ui.js"></script>
+  <script src="buyer-dashboard.js"></script>
+</body>
+</html>
