@@ -1,3 +1,4 @@
+// TODO: Replace this URL with your live Render URL once deployed!
 const API_URL = 'https://rare-encouragement-production-a351.up.railway.app/api';
 const token = localStorage.getItem('token');
 const user = JSON.parse(localStorage.getItem('user'));
@@ -191,7 +192,8 @@ async function loadOrders() {
     orderList.innerHTML += `
       <div class="crop-card">
         <strong>${order.crop_name}</strong>
-        <div class="crop-meta">${order.quantity_ordered} kg · Buyer: ${order.buyer_name}</div>
+        <!-- FIXED: Using order.quantity instead of order.quantity_ordered -->
+        <div class="crop-meta">${order.quantity} kg · Buyer: ${order.buyer_name}</div>
         <span class="status-tag status-${order.status}">${order.status}</span>
         <select onchange="updateStatus(${order.id}, this.value)" ${order.status === 'cancelled' ? 'disabled' : ''}>
           <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>

@@ -1,3 +1,4 @@
+// TODO: Replace this URL with your live Render URL once deployed!
 const API_URL = 'https://rare-encouragement-production-a351.up.railway.app/api/auth';
 
 const registerForm = document.getElementById('registerForm');
