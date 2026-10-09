@@ -1,5 +1,5 @@
 // TODO: Replace this URL with your live Render URL once deployed!
-const API_URL = 'https://rare-encouragement-production-a351.up.railway.app/api';
+const API_URL = 'https://farm-direct-backend-p7zu.onrender.com/api';
 const token = localStorage.getItem('token');
 const user = JSON.parse(localStorage.getItem('user'));
 

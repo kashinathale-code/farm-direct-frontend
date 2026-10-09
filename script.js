@@ -1,5 +1,5 @@
-// TODO: Replace this URL with your live Render URL once deployed!
-const API_URL = 'https://rare-encouragement-production-a351.up.railway.app/api/auth';
+
+const API_URL = 'https://farm-direct-backend-p7zu.onrender.com/api/auth';
 
 const registerForm = document.getElementById('registerForm');
 if (registerForm) {
