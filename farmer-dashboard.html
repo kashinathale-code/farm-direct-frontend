@@ -27,8 +27,29 @@
     <h3>Add New Crop</h3>
     <form id="cropForm">
       <input type="text" id="cropName" placeholder="Crop name (e.g. Tomato)" required>
+      <select id="cropCategory" required>
+        <option value="" disabled selected>Select category</option>
+        <option value="Vegetables">Vegetables</option>
+        <option value="Fruits">Fruits</option>
+        <option value="Grains">Grains</option>
+        <option value="Pulses">Pulses</option>
+        <option value="Spices">Spices</option>
+        <option value="Other">Other</option>
+      </select>
       <input type="number" id="price" placeholder="Price per kg (₹)" required>
       <input type="number" id="quantity" placeholder="Quantity available (kg)" required>
+      <div class="form-field-full">
+        <label class="field-label" for="harvestDate">Harvest Date</label>
+        <input type="date" id="harvestDate">
+      </div>
+      <div class="form-field-full">
+        <label class="field-label" for="cropImageInput">Crop Photo</label>
+        <input type="file" id="cropImageInput" accept="image/*">
+        <div id="cropImagePreview" class="image-preview-box" style="display: none;">
+          <img id="cropPreviewImg" src="" alt="Crop preview">
+          <button type="button" class="secondary btn-small" id="removeCropImageBtn">Remove photo</button>
+        </div>
+      </div>
       <textarea id="description" placeholder="Description (optional)"></textarea>
       <button type="submit">Add Crop</button>
     </form>
@@ -47,8 +68,28 @@
       <form id="editCropForm">
         <input type="hidden" id="editCropId">
         <input type="text" id="editCropName" placeholder="Crop name" required>
+        <select id="editCropCategory" required>
+          <option value="Vegetables">Vegetables</option>
+          <option value="Fruits">Fruits</option>
+          <option value="Grains">Grains</option>
+          <option value="Pulses">Pulses</option>
+          <option value="Spices">Spices</option>
+          <option value="Other">Other</option>
+        </select>
         <input type="number" id="editPrice" placeholder="Price per kg" required>
         <input type="number" id="editQuantity" placeholder="Quantity available" required>
+        <div class="form-field-full">
+          <label class="field-label" for="editHarvestDate">Harvest Date</label>
+          <input type="date" id="editHarvestDate">
+        </div>
+        <div class="form-field-full">
+          <label class="field-label" for="editCropImageInput">Crop Photo (leave unchanged to keep current)</label>
+          <input type="file" id="editCropImageInput" accept="image/*">
+          <div id="editCropImagePreview" class="image-preview-box" style="display: none;">
+            <img id="editCropPreviewImg" src="" alt="Crop preview">
+            <button type="button" class="secondary btn-small" id="removeEditCropImageBtn">Remove photo</button>
+          </div>
+        </div>
         <textarea id="editDescription" placeholder="Description"></textarea>
         <button type="submit">Save changes</button>
         <button type="button" class="secondary" onclick="closeEditModal()">Cancel</button>

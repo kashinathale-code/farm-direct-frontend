@@ -15,6 +15,18 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 
 const LOW_STOCK_THRESHOLD = 5;
 let allCrops = [];
+let selectedCategory = 'All';
+
+// Set up category filter chip interactions
+const categoryChips = document.querySelectorAll('.category-chip');
+categoryChips.forEach(chip => {
+  chip.addEventListener('click', () => {
+    categoryChips.forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    selectedCategory = chip.dataset.category || 'All';
+    applyFilters();
+  });
+});
 
 async function loadCrops() {
   const res = await fetch(`${API_URL}/crops`, {
@@ -25,15 +37,19 @@ async function loadCrops() {
 }
 
 function applyFilters() {
-  const query = document.getElementById('searchBox').value.toLowerCase();
+  const query = (document.getElementById('searchBox').value || '').toLowerCase().trim();
   const min = parseFloat(document.getElementById('minPrice').value) || 0;
   const max = parseFloat(document.getElementById('maxPrice').value) || Infinity;
 
-  const filtered = allCrops.filter(crop =>
-    crop.crop_name.toLowerCase().includes(query) &&
-    Number(crop.price_per_kg) >= min &&
-    Number(crop.price_per_kg) <= max
-  );
+  const filtered = allCrops.filter(crop => {
+    const matchesName = (crop.crop_name || '').toLowerCase().includes(query);
+    const price = Number(crop.price_per_kg) || 0;
+    const matchesPrice = price >= min && price <= max;
+    const cropCategory = crop.category || 'Other';
+    const matchesCategory = selectedCategory === 'All' || cropCategory.toLowerCase() === selectedCategory.toLowerCase();
+    return matchesName && matchesPrice && matchesCategory;
+  });
+
   renderCrops(filtered);
 }
 
@@ -41,19 +57,35 @@ function renderCrops(crops) {
   const cropList = document.getElementById('cropList');
   cropList.innerHTML = '';
 
-  if (crops.length === 0) {
+  if (!crops || crops.length === 0) {
     cropList.innerHTML = '<div class="empty-state">No crops match your filters.</div>';
     return;
   }
 
   crops.forEach(crop => {
     const lowStock = Number(crop.quantity_available) < LOW_STOCK_THRESHOLD;
+    const hasImage = crop.image && crop.image.startsWith('data:image/jpeg;base64,');
+
+    const imageHtml = hasImage
+      ? `<img src="${crop.image}" alt="${escapeHtml(crop.crop_name)}" class="crop-card-img" loading="lazy">`
+      : `<div class="crop-card-img placeholder"><span class="placeholder-icon">🌱</span><span>No photo</span></div>`;
+
+    const harvestHtml = crop.harvest_date
+      ? `<div class="crop-harvest-date">Harvested: ${escapeHtml(crop.harvest_date.split('T')[0])}</div>`
+      : '';
+
     cropList.innerHTML += `
       <div class="crop-card">
-        <strong>${crop.crop_name}</strong>${lowStock ? '<span class="badge-low">Low stock</span>' : ''}
-        <div class="crop-meta">₹${crop.price_per_kg}/kg · Farmer: ${crop.farmer_name} (${crop.location || 'Location not set'})</div>
+        ${imageHtml}
+        <div class="crop-header-row">
+          <strong>${escapeHtml(crop.crop_name)}</strong>
+          <span class="category-badge">${escapeHtml(crop.category || 'Other')}</span>
+        </div>
+        ${lowStock ? '<span class="badge-low">Low stock</span>' : ''}
+        <div class="crop-meta">₹${escapeHtml(crop.price_per_kg)}/kg · Farmer: ${escapeHtml(crop.farmer_name)} (${escapeHtml(crop.location || 'Location not set')})</div>
+        ${harvestHtml}
         <div class="stock-bar-track"><div class="stock-bar-fill" style="width:${stockPercent(crop.quantity_available)}%"></div></div>
-        <p style="margin:0 0 10px">${crop.description || ''}</p>
+        <p style="margin:0 0 10px">${escapeHtml(crop.description || '')}</p>
         <div class="order-row">
           <input type="number" id="qty-${crop.id}" placeholder="Qty (kg)" min="1">
           <button onclick="placeOrder(${crop.id})">Order now</button>
@@ -118,9 +150,9 @@ async function loadOrders() {
   orders.forEach(order => {
     orderList.innerHTML += `
       <div class="crop-card">
-        <strong>${order.crop_name}</strong>
-        <div class="crop-meta">${order.quantity_ordered} kg · ₹${order.price_per_kg}/kg · Farmer: ${order.farmer_name}</div>
-        <span class="status-tag status-${order.status}">${order.status}</span>
+        <strong>${escapeHtml(order.crop_name)}</strong>
+        <div class="crop-meta">${escapeHtml(order.quantity_ordered)} kg · ₹${escapeHtml(order.price_per_kg)}/kg · Farmer: ${escapeHtml(order.farmer_name)}</div>
+        <span class="status-tag status-${escapeHtml(order.status)}">${escapeHtml(order.status)}</span>
         ${order.status === 'pending' ? `<button class="danger" style="width:auto;padding:6px 14px;font-size:13px;margin-left:8px" onclick="cancelOrder(${order.id})">Cancel</button>` : ''}
         <button class="toggle-messages" onclick="toggleMessages(${order.id})">Message farmer</button>
         <div id="thread-${order.id}" style="display:none">
@@ -185,8 +217,8 @@ async function loadMessages(orderId) {
     ? '<p style="font-size:13px;color:var(--ink-soft);margin:0">No messages yet.</p>'
     : messages.map(m => `
         <div class="message-bubble ${m.sender_id === user.id ? 'mine' : ''}">
-          <div class="sender">${m.sender_name}</div>
-          ${m.message_text}
+          <div class="sender">${escapeHtml(m.sender_name)}</div>
+          ${escapeHtml(m.message_text)}
         </div>
       `).join('');
   box.scrollTop = box.scrollHeight;
