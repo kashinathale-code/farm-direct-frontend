@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Farmer Dashboard - Farm Direct</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="app-body">
+  <!-- Navigation -->
   <nav class="app-nav">
     <div class="nav-container">
       <div class="logo">Farm Direct</div>
@@ -22,49 +24,117 @@
   <main class="dashboard-main">
     <div class="dashboard-content">
 
-    <div class="stats-grid" id="statsGrid"></div>
+      <!-- Dynamic Statistics Summary Grid -->
+      <div class="stats-grid" id="statsGrid"></div>
 
-    <h3>Add New Crop</h3>
-    <form id="cropForm">
-      <input type="text" id="cropName" placeholder="Crop name (e.g. Tomato)" required>
-      <select id="cropCategory" required>
-        <option value="" disabled selected>Select category</option>
-        <option value="Vegetables">Vegetables</option>
-        <option value="Fruits">Fruits</option>
-        <option value="Grains">Grains</option>
-        <option value="Pulses">Pulses</option>
-        <option value="Spices">Spices</option>
-        <option value="Other">Other</option>
-      </select>
-      <input type="number" id="price" placeholder="Price per kg (₹)" required>
-      <input type="number" id="quantity" placeholder="Quantity available (kg)" required>
-      <div class="form-field-full">
-        <label class="field-label" for="harvestDate">Harvest Date</label>
-        <input type="date" id="harvestDate">
+      <!-- Navigation Tabs for Farmer Tools -->
+      <div class="dashboard-tabs">
+        <button class="tab-btn active" data-tab="listingsTab">🌾 Crop Listings</button>
+        <button class="tab-btn" data-tab="ordersTab">📦 Orders & Fulfillment</button>
+        <button class="tab-btn" data-tab="bidsTab">🤝 Price Negotiations (<span id="bidCountBadge">0</span>)</button>
+        <button class="tab-btn" data-tab="groupBuyTab">👥 Group Buying Campaigns</button>
       </div>
-      <div class="form-field-full">
-        <label class="field-label" for="cropImageInput">Crop Photo</label>
-        <input type="file" id="cropImageInput" accept="image/*">
-        <div id="cropImagePreview" class="image-preview-box" style="display: none;">
-          <img id="cropPreviewImg" src="" alt="Crop preview">
-          <button type="button" class="secondary btn-small" id="removeCropImageBtn">Remove photo</button>
+
+      <!-- TAB 1: CROP LISTINGS -->
+      <div id="listingsTab" class="tab-pane active">
+        <div class="section-title-row">
+          <h3>Add New Harvest Listing</h3>
         </div>
+
+        <form id="cropForm">
+          <input type="text" id="cropName" placeholder="Crop name (e.g. Alphonso Mango, Tomato)" required>
+          <select id="cropCategory" required>
+            <option value="" disabled selected>Select category</option>
+            <option value="Vegetables">Vegetables</option>
+            <option value="Fruits">Fruits</option>
+            <option value="Grains">Grains</option>
+            <option value="Pulses">Pulses</option>
+            <option value="Spices">Spices</option>
+            <option value="Other">Other</option>
+          </select>
+          <input type="number" id="price" placeholder="Price per kg (₹)" min="1" step="0.5" required>
+          <input type="number" id="quantity" placeholder="Quantity available (kg)" min="1" required>
+
+          <div class="form-field-full">
+            <label class="field-label" for="harvestDate">Harvest Date</label>
+            <input type="date" id="harvestDate">
+          </div>
+
+          <!-- Negotiation / Bidding Settings -->
+          <div class="form-field-full form-checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="biddingEnabled">
+              <span><strong>Enable Buyer Price Negotiation</strong> (Allow buyers to submit counteroffers)</span>
+            </label>
+          </div>
+          <div class="form-field-full" id="minPriceRow" style="display:none;">
+            <label class="field-label" for="minBiddingPrice">Private Minimum Acceptable Price (₹/kg) <small style="color:var(--ink-soft); font-weight:normal;">(Kept secret from buyers)</small></label>
+            <input type="number" id="minBiddingPrice" placeholder="e.g. ₹35 (optional reserve price)" min="1" step="0.5">
+          </div>
+
+          <div class="form-field-full">
+            <label class="field-label" for="cropImageInput">Crop Photo</label>
+            <input type="file" id="cropImageInput" accept="image/*">
+            <div id="cropImagePreview" class="image-preview-box" style="display: none;">
+              <img id="cropPreviewImg" src="" alt="Crop preview">
+              <button type="button" class="secondary btn-small" id="removeCropImageBtn">Remove photo</button>
+            </div>
+          </div>
+
+          <textarea id="description" placeholder="Description & farming details (e.g. Organic, pesticide-free, freshly harvested)..."></textarea>
+          <button type="submit">Publish Listing</button>
+        </form>
+
+        <div class="section-title-row" style="margin-top: 36px;">
+          <h3>My Active Crop Listings</h3>
+          <input type="text" id="farmerSearchBox" placeholder="Filter my listings..." style="max-width: 250px; margin: 0;">
+        </div>
+        <div id="cropList"></div>
       </div>
-      <textarea id="description" placeholder="Description (optional)"></textarea>
-      <button type="submit">Add Crop</button>
-    </form>
 
-    <h3>My Crop Listings</h3>
-    <div id="cropList"></div>
+      <!-- TAB 2: ORDERS & FULFILLMENT -->
+      <div id="ordersTab" class="tab-pane" style="display:none;">
+        <div class="section-title-row">
+          <h3>Incoming Buyer Orders</h3>
+          <div class="filter-pills" id="orderFilterPills">
+            <button class="pill active" data-filter="all">All</button>
+            <button class="pill" data-filter="pending">Pending</button>
+            <button class="pill" data-filter="accepted">Accepted</button>
+            <button class="pill" data-filter="processing">Processing</button>
+            <button class="pill" data-filter="delivered">Delivered</button>
+          </div>
+        </div>
+        <div id="orderList"></div>
+      </div>
 
-    <h3>Incoming Orders</h3>
-    <div id="orderList"></div>
+      <!-- TAB 3: PRICE NEGOTIATIONS -->
+      <div id="bidsTab" class="tab-pane" style="display:none;">
+        <div class="section-title-row">
+          <h3>Incoming Price Negotiations & Offers</h3>
+          <p style="margin: 0; font-size: 14px; color: var(--ink-soft);">Review custom price proposals from buyers. Accepting an offer locks stock and generates an order instantly.</p>
+        </div>
+        <div id="farmerBidList"></div>
+      </div>
+
+      <!-- TAB 4: GROUP BUYING CAMPAIGNS -->
+      <div id="groupBuyTab" class="tab-pane" style="display:none;">
+        <div class="section-title-row">
+          <h3>Community Group Buying Campaigns</h3>
+          <button id="openCreateGroupBuyBtn" class="btn-primary btn-small">+ Launch New Campaign</button>
+        </div>
+        <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 20px;">
+          Group buying allows multiple buyers to combine orders towards a bulk volume target at a wholesale rate.
+        </p>
+        <div id="farmerGroupBuyList"></div>
+      </div>
+
     </div>
   </main>
 
+  <!-- Edit Crop Modal -->
   <div id="editModal" class="modal-overlay" style="display:none">
     <div class="modal-box">
-      <h3>Edit crop</h3>
+      <h3>Edit Crop Listing</h3>
       <form id="editCropForm">
         <input type="hidden" id="editCropId">
         <input type="text" id="editCropName" placeholder="Crop name" required>
@@ -78,25 +148,113 @@
         </select>
         <input type="number" id="editPrice" placeholder="Price per kg" required>
         <input type="number" id="editQuantity" placeholder="Quantity available" required>
+
         <div class="form-field-full">
           <label class="field-label" for="editHarvestDate">Harvest Date</label>
           <input type="date" id="editHarvestDate">
         </div>
+
+        <div class="form-field-full form-checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="editBiddingEnabled">
+            <span>Enable Buyer Price Negotiation</span>
+          </label>
+        </div>
+        <div class="form-field-full" id="editMinPriceRow">
+          <label class="field-label" for="editMinBiddingPrice">Private Minimum Acceptable Price (₹/kg)</label>
+          <input type="number" id="editMinBiddingPrice" placeholder="Reserve price" min="1" step="0.5">
+        </div>
+
         <div class="form-field-full">
-          <label class="field-label" for="editCropImageInput">Crop Photo (leave unchanged to keep current)</label>
+          <label class="field-label" for="editCropImageInput">Crop Photo (leave empty to keep current)</label>
           <input type="file" id="editCropImageInput" accept="image/*">
           <div id="editCropImagePreview" class="image-preview-box" style="display: none;">
             <img id="editCropPreviewImg" src="" alt="Crop preview">
             <button type="button" class="secondary btn-small" id="removeEditCropImageBtn">Remove photo</button>
           </div>
         </div>
+
         <textarea id="editDescription" placeholder="Description"></textarea>
-        <button type="submit">Save changes</button>
+        <button type="submit">Save Changes</button>
         <button type="button" class="secondary" onclick="closeEditModal()">Cancel</button>
       </form>
     </div>
   </div>
 
+  <!-- QR Code Traceability Modal -->
+  <div id="qrModal" class="modal-overlay" style="display:none">
+    <div class="modal-box" style="text-align: center;">
+      <h3 id="qrModalTitle">Crop Traceability QR Code</h3>
+      <p style="font-size: 13px; color: var(--ink-soft); margin-bottom: 16px;">
+        Scan with any smartphone camera to inspect verified farm origin & harvest certificate.
+      </p>
+      <div id="qrImageWrap" style="margin: 16px auto; padding: 16px; background: white; border-radius: 16px; display: inline-block; border: 1px solid var(--border);">
+        <img id="qrModalImg" src="" alt="QR Code" style="width: 220px; height: 220px; display: block;">
+      </div>
+      <div style="font-size: 13px; font-family: monospace; font-weight: 600; color: var(--leaf-dark);" id="qrModalCode"></div>
+
+      <div style="margin-top: 20px; display: flex; gap: 8px; flex-direction: column;">
+        <a id="qrPublicPageLink" href="#" target="_blank" class="btn-primary">View Public Traceability Page</a>
+        <div style="display:flex; gap: 8px;">
+          <a id="qrDownloadBtn" href="#" download="crop-traceability-qr.png" class="btn-secondary" style="flex:1;">⬇ Download PNG</a>
+          <button type="button" class="btn-secondary" onclick="window.print()" style="flex:1;">🖨 Print QR</button>
+        </div>
+        <button type="button" class="secondary" onclick="closeQrModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Timeline Modal -->
+  <div id="orderTimelineModal" class="modal-overlay" style="display:none">
+    <div class="modal-box" style="max-width: 500px;">
+      <h3>Order Fulfillment Timeline</h3>
+      <div id="timelineOrderInfo" style="margin-bottom: 16px; font-size: 14px; color: var(--ink-soft);"></div>
+      <div id="timelineStepper" class="timeline-stepper"></div>
+      <button type="button" class="secondary" onclick="closeTimelineModal()" style="margin-top: 20px;">Close</button>
+    </div>
+  </div>
+
+  <!-- Counteroffer Modal -->
+  <div id="counterModal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <h3>Submit Counteroffer</h3>
+      <p id="counterModalInfo" style="font-size: 14px; color: var(--ink-soft); margin-bottom: 16px;"></p>
+      <form id="counterOfferForm">
+        <input type="hidden" id="counterBidId">
+        <label class="field-label" for="counterPrice">Your Proposed Price (₹/kg)</label>
+        <input type="number" id="counterPrice" placeholder="Enter counter price ₹/kg" min="1" step="0.5" required>
+        <label class="field-label" for="counterNote">Note for Buyer (Optional)</label>
+        <textarea id="counterNote" placeholder="e.g. Can do ₹45/kg if collected this weekend..."></textarea>
+        <button type="submit">Send Counteroffer</button>
+        <button type="button" class="secondary" onclick="closeCounterModal()">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Create Group Buy Modal -->
+  <div id="createGroupBuyModal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <h3>Launch Community Group Buying</h3>
+      <form id="createGroupBuyForm">
+        <label class="field-label" for="gbCropSelect">Select Eligible Crop</label>
+        <select id="gbCropSelect" required>
+          <option value="" disabled selected>Choose a crop listing</option>
+        </select>
+        <label class="field-label" for="gbTitle">Campaign Title</label>
+        <input type="text" id="gbTitle" placeholder="e.g. Bulk Monsoon Rice Co-op Deal" required>
+        <label class="field-label" for="gbTargetQty">Target Volume (kg)</label>
+        <input type="number" id="gbTargetQty" placeholder="e.g. 50 kg" min="5" required>
+        <label class="field-label" for="gbDiscountPrice">Discounted Rate (₹/kg)</label>
+        <input type="number" id="gbDiscountPrice" placeholder="e.g. ₹40" min="1" step="0.5" required>
+        <label class="field-label" for="gbEndDate">Campaign Cutoff Date</label>
+        <input type="date" id="gbEndDate" required>
+        <button type="submit">Launch Campaign</button>
+        <button type="button" class="secondary" onclick="closeCreateGroupBuyModal()">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
   <script src="ui.js"></script>
   <script src="farmer-dashboard.js"></script>
 </body>

@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Buyer Dashboard - Farm Direct</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="app-body">
+  <!-- Navigation -->
   <nav class="app-nav">
     <div class="nav-container">
       <div class="logo">Farm Direct</div>
@@ -22,31 +24,155 @@
   <main class="dashboard-main">
     <div class="dashboard-content">
 
-    <h3>Browse Available Crops</h3>
-    <input type="text" id="searchBox" placeholder="Search by crop name...">
-    <div class="filter-row">
-      <input type="number" id="minPrice" placeholder="Min price ₹">
-      <input type="number" id="maxPrice" placeholder="Max price ₹">
-    </div>
-    <div class="category-filter-container">
-      <span class="category-filter-label">Filter by Category:</span>
-      <div class="category-chips" id="categoryChips">
-        <button type="button" class="category-chip active" data-category="All">All</button>
-        <button type="button" class="category-chip" data-category="Vegetables">Vegetables</button>
-        <button type="button" class="category-chip" data-category="Fruits">Fruits</button>
-        <button type="button" class="category-chip" data-category="Grains">Grains</button>
-        <button type="button" class="category-chip" data-category="Pulses">Pulses</button>
-        <button type="button" class="category-chip" data-category="Spices">Spices</button>
-        <button type="button" class="category-chip" data-category="Other">Other</button>
+      <!-- Navigation Tabs -->
+      <div class="dashboard-tabs">
+        <button class="tab-btn active" data-tab="marketTab">🛒 Browse Marketplace</button>
+        <button class="tab-btn" data-tab="ordersTab">📦 My Orders</button>
+        <button class="tab-btn" data-tab="bidsTab">🤝 My Negotiations (<span id="buyerBidBadge">0</span>)</button>
+        <button class="tab-btn" data-tab="groupBuyTab">👥 Community Group Buys</button>
       </div>
-    </div>
-    <div id="cropList"></div>
 
-    <h3>My Orders</h3>
-    <div id="orderList"></div>
+      <!-- TAB 1: BROWSE MARKETPLACE -->
+      <div id="marketTab" class="tab-pane active">
+        <div class="section-title-row">
+          <h3>Direct-from-Farm Produce</h3>
+          <span style="font-size:13px; color:var(--ink-soft);" id="cropCountText">Loading crops...</span>
+        </div>
+
+        <input type="text" id="searchBox" placeholder="Search by crop name, farmer, or region...">
+
+        <div class="filter-row" style="grid-template-columns: 1fr 1fr 1.5fr;">
+          <input type="number" id="minPrice" placeholder="Min price ₹" min="0">
+          <input type="number" id="maxPrice" placeholder="Max price ₹" min="0">
+          <select id="sortSelect" aria-label="Sort crops">
+            <option value="newest">Sort: Newest Listed</option>
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
+            <option value="stock_desc">Highest Stock Available</option>
+          </select>
+        </div>
+
+        <div class="category-filter-container">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+            <span class="category-filter-label" style="margin:0;">Filter by Category:</span>
+            <label class="checkbox-label" style="font-size:13px; cursor:pointer;">
+              <input type="checkbox" id="negotiableOnlyFilter">
+              <span>🤝 Negotiable Only</span>
+            </label>
+          </div>
+          <div class="category-chips" id="categoryChips">
+            <button type="button" class="category-chip active" data-category="All">All Produce</button>
+            <button type="button" class="category-chip" data-category="Vegetables">Vegetables</button>
+            <button type="button" class="category-chip" data-category="Fruits">Fruits</button>
+            <button type="button" class="category-chip" data-category="Grains">Grains</button>
+            <button type="button" class="category-chip" data-category="Pulses">Pulses</button>
+            <button type="button" class="category-chip" data-category="Spices">Spices</button>
+            <button type="button" class="category-chip" data-category="Other">Other</button>
+          </div>
+        </div>
+
+        <div id="cropList"></div>
+      </div>
+
+      <!-- TAB 2: MY ORDERS -->
+      <div id="ordersTab" class="tab-pane" style="display:none;">
+        <div class="section-title-row">
+          <h3>My Purchase Orders</h3>
+          <p style="margin:0; font-size:14px; color:var(--ink-soft);">Track order fulfillment status timelines and message farmers directly.</p>
+        </div>
+        <div id="orderList"></div>
+      </div>
+
+      <!-- TAB 3: PRICE NEGOTIATIONS -->
+      <div id="bidsTab" class="tab-pane" style="display:none;">
+        <div class="section-title-row">
+          <h3>My Price Negotiations</h3>
+          <p style="margin:0; font-size:14px; color:var(--ink-soft);">Review custom offer status and counteroffers from farmers.</p>
+        </div>
+        <div id="buyerBidList"></div>
+      </div>
+
+      <!-- TAB 4: GROUP BUYING -->
+      <div id="groupBuyTab" class="tab-pane" style="display:none;">
+        <div class="section-title-row">
+          <h3>Community Group Buying Campaigns</h3>
+        </div>
+        <p style="font-size:14px; color:var(--ink-soft); margin-bottom:20px;">
+          Join a co-op group buy to unlock bulk wholesale rates! Once the volume target is reached before the deadline, all orders are automatically fulfilled at the discounted rate.
+        </p>
+        <div id="buyerGroupBuyList"></div>
+      </div>
+
     </div>
   </main>
 
+  <!-- Submit Offer / Bidding Modal -->
+  <div id="bidModal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <h3>Submit Custom Price Offer</h3>
+      <div id="bidModalCropInfo" style="margin-bottom:16px; font-size:14px; color:var(--ink-soft);"></div>
+      <form id="bidForm">
+        <input type="hidden" id="bidCropId">
+        <label class="field-label" for="bidQty">Quantity Required (kg)</label>
+        <input type="number" id="bidQty" placeholder="e.g. 25" min="1" required>
+
+        <label class="field-label" for="bidPrice">Your Proposed Price (₹/kg)</label>
+        <input type="number" id="bidPrice" placeholder="e.g. 42" min="1" step="0.5" required>
+
+        <label class="field-label" for="bidNote">Note for Farmer (Optional)</label>
+        <textarea id="bidNote" placeholder="e.g. Looking for regular bulk supply for restaurant..."></textarea>
+
+        <button type="submit">Submit Offer to Farmer</button>
+        <button type="button" class="secondary" onclick="closeBidModal()">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Buyer Counteroffer Modal -->
+  <div id="buyerCounterModal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <h3>Respond with Counteroffer</h3>
+      <p id="buyerCounterInfo" style="font-size:14px; color:var(--ink-soft); margin-bottom:16px;"></p>
+      <form id="buyerCounterForm">
+        <input type="hidden" id="buyerCounterBidId">
+        <label class="field-label" for="buyerCounterPrice">Your Revised Price (₹/kg)</label>
+        <input type="number" id="buyerCounterPrice" placeholder="Proposed ₹/kg" min="1" step="0.5" required>
+        <label class="field-label" for="buyerCounterNote">Note (Optional)</label>
+        <textarea id="buyerCounterNote" placeholder="Additional details..."></textarea>
+        <button type="submit">Send Counteroffer</button>
+        <button type="button" class="secondary" onclick="closeBuyerCounterModal()">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Join Group Buy Modal -->
+  <div id="joinGbModal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <h3>Join Community Group Buy</h3>
+      <div id="joinGbInfo" style="margin-bottom:16px; font-size:14px; color:var(--ink-soft);"></div>
+      <form id="joinGbForm">
+        <input type="hidden" id="joinGbId">
+        <input type="hidden" id="joinGbRate">
+        <label class="field-label" for="joinGbQty">Quantity to Commit (kg)</label>
+        <input type="number" id="joinGbQty" placeholder="e.g. 10 kg" min="1" required>
+        <div id="joinGbCalculatedTotal" style="margin: 8px 0 16px; font-size:14px; font-weight:600; color:var(--leaf-dark);"></div>
+        <button type="submit">Confirm Commitment</button>
+        <button type="button" class="secondary" onclick="closeJoinGbModal()">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Order Timeline Modal -->
+  <div id="buyerTimelineModal" class="modal-overlay" style="display:none">
+    <div class="modal-box" style="max-width: 500px;">
+      <h3>Order Fulfillment Timeline</h3>
+      <div id="buyerTimelineOrderInfo" style="margin-bottom: 16px; font-size: 14px; color: var(--ink-soft);"></div>
+      <div id="buyerTimelineStepper" class="timeline-stepper"></div>
+      <button type="button" class="secondary" onclick="closeBuyerTimelineModal()" style="margin-top: 20px;">Close</button>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
   <script src="ui.js"></script>
   <script src="buyer-dashboard.js"></script>
 </body>

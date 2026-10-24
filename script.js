@@ -1,5 +1,5 @@
 
-const API_URL = 'https://farm-direct-backend-p7zu.onrender.com/api/auth';
+const AUTH_API_URL = (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : (window.API_URL || 'https://farm-direct-backend-p7zu.onrender.com/api')) + '/auth';
 
 const registerForm = document.getElementById('registerForm');
 if (registerForm) {
@@ -16,7 +16,7 @@ if (registerForm) {
     setLoading(btn, true);
 
     try {
-      const res = await fetch(`${API_URL}/register`, {
+      const res = await fetch(`${AUTH_API_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role, location })
@@ -51,7 +51,7 @@ if (loginForm) {
     setLoading(btn, true);
 
     try {
-      const res = await fetch(`${API_URL}/login`, {
+      const res = await fetch(`${AUTH_API_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
