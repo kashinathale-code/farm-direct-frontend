@@ -1,4 +1,7 @@
-// Buyer Dashboard Controller
+// ============================================================================
+// FARM DIRECT — BUYER DASHBOARD CONTROLLER
+// ============================================================================
+
 const API_URL = window.API_URL || API_BASE_URL;
 const token = localStorage.getItem('token');
 const user = JSON.parse(localStorage.getItem('user'));
@@ -7,53 +10,243 @@ if (!token || !user || user.role !== 'buyer') {
   window.location.href = 'login.html';
 }
 
-document.getElementById('buyerName').textContent = user.name;
+// Global State
+const LOW_STOCK_THRESHOLD = 5;
+let allCrops = [];
+let allBuyerOrders = [];
+let selectedCategory = 'All';
+let currentBuyerActiveView = 'buyerOverviewView';
 
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  localStorage.clear();
-  window.location.href = 'login.html';
-});
-
-// Initialize UI widgets
+// Initialize Dashboard Shell, Notification System, and AI Assistant
+initDashboardShell(user, 'navBuyerOverview');
 initNotificationSystem(token);
 initAIAssistant();
 
-const LOW_STOCK_THRESHOLD = 5;
-let allCrops = [];
-let selectedCategory = 'All';
+// Update Welcome Name
+const welcomeBuyerName = document.getElementById('welcomeBuyerName');
+if (welcomeBuyerName) welcomeBuyerName.textContent = user.name;
+
+// Global Logout Handler
+window.handleBuyerLogout = function() {
+  if (confirm('Are you sure you want to log out of Farm Direct?')) {
+    localStorage.clear();
+    window.location.href = 'login.html';
+  }
+};
+
+// Global View Switcher
+window.showBuyerSection = function(viewId, title, navId) {
+  currentBuyerActiveView = viewId;
+  switchDashboardView(viewId, title, navId);
+
+  if (viewId === 'buyerOverviewView') {
+    loadBuyerStatsAndOverview();
+  } else if (viewId === 'browseCropsView') {
+    loadCrops();
+  } else if (viewId === 'myOrdersView') {
+    loadOrders();
+  } else if (viewId === 'trackOrdersView') {
+    loadTrackOrdersView();
+  } else if (viewId === 'buyerGroupBuyView') {
+    loadBuyerGroupBuys();
+  } else if (viewId === 'buyerBidsView') {
+    loadBuyerBids();
+  } else if (viewId === 'priceComparisonView') {
+    loadPriceComparison();
+  } else if (viewId === 'buyerMessagesView') {
+    loadBuyerMessagesView();
+  } else if (viewId === 'buyerNotificationsView') {
+    loadBuyerDedicatedNotifications();
+  } else if (viewId === 'buyerProfileView') {
+    loadBuyerProfile();
+  } else if (viewId === 'buyerSettingsView') {
+    loadBuyerSettings();
+  }
+};
 
 // ============================================================================
-// TAB NAVIGATION
+// BREADCRUMB & HEADER QUICK SEARCH
 // ============================================================================
-const tabButtons = document.querySelectorAll('.dashboard-tabs .tab-btn');
-const tabPanes = document.querySelectorAll('.tab-pane');
+const buyerHeaderSearch = document.getElementById('buyerQuickSearch');
+if (buyerHeaderSearch) {
+  buyerHeaderSearch.addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    const searchBox = document.getElementById('searchBox');
+    if (searchBox) {
+      searchBox.value = q;
+      applyFilters();
+    }
+    if (currentBuyerActiveView !== 'browseCropsView' && q.length > 0) {
+      showBuyerSection('browseCropsView', 'Browse Produce Marketplace', 'navBrowseCrops');
+    }
+  });
+}
 
-tabButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    tabButtons.forEach(b => b.classList.remove('active'));
-    tabPanes.forEach(p => {
-      p.classList.remove('active');
-      p.style.display = 'none';
-    });
+// ============================================================================
+// BUYER OVERVIEW & STATS
+// ============================================================================
+async function loadBuyerStatsAndOverview() {
+  try {
+    const [ordersRes, cropsRes, bidsRes, gbRes] = await Promise.all([
+      fetch(`${API_URL}/orders/buyer/${user.id}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+      fetch(`${API_URL}/crops`, { headers: { 'Authorization': `Bearer ${token}` } }),
+      fetch(`${API_URL}/bids/buyer`, { headers: { 'Authorization': `Bearer ${token}` } }),
+      fetch(`${API_URL}/group-buys`, { headers: { 'Authorization': `Bearer ${token}` } })
+    ]);
 
-    btn.classList.add('active');
-    const targetPane = document.getElementById(btn.dataset.tab);
-    if (targetPane) {
-      targetPane.classList.add('active');
-      targetPane.style.display = 'block';
+    const orders = await ordersRes.json();
+    const crops = await cropsRes.json();
+    const bids = await bidsRes.json();
+    const groupBuys = await gbRes.json();
+
+    allBuyerOrders = orders || [];
+    allCrops = crops || [];
+
+    // Calculate metrics
+    const totalOrders = allBuyerOrders.length;
+    const deliveredOrders = allBuyerOrders.filter(o => o.status === 'delivered').length;
+    const activeOrders = allBuyerOrders.filter(o => ['pending', 'accepted', 'processing', 'shipped'].includes(o.status)).length;
+    const totalSpent = allBuyerOrders
+      .filter(o => o.status !== 'cancelled' && o.status !== 'rejected')
+      .reduce((sum, o) => sum + Number(o.total_price || 0), 0);
+    const activeBids = (bids || []).filter(b => ['pending', 'countered'].includes(b.status)).length;
+
+    // Render Stats
+    const statsGrid = document.getElementById('buyerStatsGrid');
+    if (statsGrid) {
+      statsGrid.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-icon-wrap green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">${activeOrders}</div>
+            <div class="stat-label">Active Orders</div>
+            <div class="stat-subtext">Currently in fulfillment</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">${deliveredOrders}</div>
+            <div class="stat-label">Delivered Purchases</div>
+            <div class="stat-subtext">Verified farm deliveries</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap amber">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">${activeBids}</div>
+            <div class="stat-label">Active Negotiations</div>
+            <div class="stat-subtext">Direct farmer counteroffers</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap purple">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">₹${totalSpent.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+            <div class="stat-label">Total Produce Value</div>
+            <div class="stat-subtext">Direct to growers (0% broker fee)</div>
+          </div>
+        </div>
+      `;
     }
 
-    if (btn.dataset.tab === 'ordersTab') loadOrders();
-    if (btn.dataset.tab === 'bidsTab') loadBuyerBids();
-    if (btn.dataset.tab === 'groupBuyTab') loadBuyerGroupBuys();
-    if (btn.dataset.tab === 'marketTab') loadCrops();
-  });
-});
+    // 1. Featured Produce Preview
+    const produceBox = document.getElementById('buyerOverviewProducePreview');
+    if (produceBox) {
+      if (!allCrops || allCrops.length === 0) {
+        produceBox.innerHTML = '<div class="empty-state">No produce listed right now. Local farmers will publish harvests soon!</div>';
+      } else {
+        const previewCrops = allCrops.slice(0, 4);
+        produceBox.innerHTML = previewCrops.map(crop => {
+          const hasImage = crop.image && crop.image.startsWith('data:image/jpeg;base64,');
+          const imageHtml = hasImage
+            ? `<img src="${crop.image}" alt="${escapeHtml(crop.crop_name)}" class="crop-card-img" loading="lazy">`
+            : `<div class="crop-card-img placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/></svg><span>Fresh Produce</span></div>`;
+
+          return `
+            <div class="crop-card">
+              ${imageHtml}
+              <div class="crop-header-row">
+                <strong>${escapeHtml(crop.crop_name)}</strong>
+                <span class="category-badge">${escapeHtml(crop.category || 'Other')}</span>
+              </div>
+              <div class="crop-meta-row">
+                <span class="crop-price-highlight">₹${crop.price_per_kg}</span>
+                <span class="crop-unit-text">/ kg</span>
+              </div>
+              <div class="crop-farmer-meta">
+                Farmer: <strong>${escapeHtml(crop.farmer_name)}</strong> (${escapeHtml(crop.location || 'India')})
+              </div>
+              <div style="margin-top:auto; padding-top:12px;">
+                <button class="btn-primary btn-small" style="width:100%;" onclick="showBuyerSection('browseCropsView', 'Browse Produce', 'navBrowseCrops')">View & Order</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // 2. Recent Orders Preview
+    const ordersBox = document.getElementById('buyerOverviewOrdersPreview');
+    if (ordersBox) {
+      if (!allBuyerOrders || allBuyerOrders.length === 0) {
+        ordersBox.innerHTML = '<div class="empty-state">No orders placed yet. Browse the fresh marketplace to purchase directly from farmers!</div>';
+      } else {
+        const previewOrders = allBuyerOrders.slice(0, 4);
+        ordersBox.innerHTML = `
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Produce</th>
+                  <th>Farmer</th>
+                  <th>Quantity</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Timeline</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${previewOrders.map(o => `
+                  <tr>
+                    <td><strong>#${o.id}</strong></td>
+                    <td><strong>${escapeHtml(o.crop_name)}</strong></td>
+                    <td>${escapeHtml(o.farmer_name)} <small style="color:var(--ink-soft)">(${escapeHtml(o.farmer_location || 'India')})</small></td>
+                    <td>${o.quantity} kg</td>
+                    <td><strong>₹${Number(o.total_price).toFixed(2)}</strong></td>
+                    <td><span class="status-tag status-${escapeHtml(o.status)}">${escapeHtml(o.status)}</span></td>
+                    <td>
+                      <button class="btn-secondary btn-small" onclick="openBuyerTimeline(${o.id})">Track</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+    }
+  } catch (err) {
+    console.error('loadBuyerStatsAndOverview error:', err);
+  }
+}
 
 // ============================================================================
 // MARKETPLACE CROPS & ADVANCED SEARCH / FILTERING
 // ============================================================================
-const categoryChips = document.querySelectorAll('.category-chip');
+const categoryChips = document.querySelectorAll('#categoryChips .category-chip');
 categoryChips.forEach(chip => {
   chip.addEventListener('click', () => {
     categoryChips.forEach(c => c.classList.remove('active'));
@@ -76,9 +269,9 @@ async function loadCrops() {
 }
 
 function applyFilters() {
-  const query = (document.getElementById('searchBox').value || '').toLowerCase().trim();
-  const min = parseFloat(document.getElementById('minPrice').value) || 0;
-  const max = parseFloat(document.getElementById('maxPrice').value) || Infinity;
+  const query = (document.getElementById('searchBox')?.value || '').toLowerCase().trim();
+  const min = parseFloat(document.getElementById('minPrice')?.value) || 0;
+  const max = parseFloat(document.getElementById('maxPrice')?.value) || Infinity;
   const negotiableOnly = document.getElementById('negotiableOnlyFilter')?.checked || false;
   const sortBy = document.getElementById('sortSelect')?.value || 'newest';
 
@@ -103,22 +296,28 @@ function applyFilters() {
   } else if (sortBy === 'stock_desc') {
     filtered.sort((a, b) => Number(b.quantity_available) - Number(a.quantity_available));
   } else {
-    // Newest default (by ID desc)
     filtered.sort((a, b) => b.id - a.id);
   }
 
   const countEl = document.getElementById('cropCountText');
-  if (countEl) countEl.textContent = `${filtered.length} crop${filtered.length === 1 ? '' : 's'} available`;
+  if (countEl) countEl.textContent = `${filtered.length} fresh produce item${filtered.length === 1 ? '' : 's'} available directly from farmers`;
 
   renderCrops(filtered);
 }
 
 function renderCrops(crops) {
   const cropList = document.getElementById('cropList');
+  if (!cropList) return;
   cropList.innerHTML = '';
 
   if (!crops || crops.length === 0) {
-    cropList.innerHTML = '<div class="empty-state">No crops match your filters. Try resetting search or price range.</div>';
+    cropList.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">🔍</div>
+        <h3>No produce matches your filters</h3>
+        <p>Try resetting the search query or adjusting the price range filter.</p>
+      </div>
+    `;
     return;
   }
 
@@ -128,10 +327,13 @@ function renderCrops(crops) {
 
     const imageHtml = hasImage
       ? `<img src="${crop.image}" alt="${escapeHtml(crop.crop_name)}" class="crop-card-img" loading="lazy">`
-      : `<div class="crop-card-img placeholder"><span class="placeholder-icon">🌱</span><span>Fresh harvest</span></div>`;
+      : `<div class="crop-card-img placeholder">
+           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/></svg>
+           <span>Fresh Harvest</span>
+         </div>`;
 
     const harvestHtml = crop.harvest_date
-      ? `<div class="crop-harvest-date">Harvested: ${formatDate(crop.harvest_date)}</div>`
+      ? `<div class="crop-harvest-date">📅 Harvested: ${formatDate(crop.harvest_date)}</div>`
       : '';
 
     const biddingTag = crop.bidding_enabled
@@ -139,7 +341,7 @@ function renderCrops(crops) {
       : '';
 
     const originLink = crop.traceability_code
-      ? `<a href="traceability.html?code=${crop.traceability_code}" target="_blank" class="trace-chip" title="Inspect verified farm harvest origin">🛡️ Verified Origin</a>`
+      ? `<a href="traceability.html?code=${crop.traceability_code}" target="_blank" class="trace-chip" title="Inspect verified farm origin">🛡️ Verified Origin</a>`
       : '';
 
     cropList.innerHTML += `
@@ -149,21 +351,35 @@ function renderCrops(crops) {
           <strong>${escapeHtml(crop.crop_name)}</strong>
           <span class="category-badge">${escapeHtml(crop.category || 'Other')}</span>
         </div>
+
+        <div class="crop-meta-row">
+          <span class="crop-price-highlight">₹${escapeHtml(crop.price_per_kg)}</span>
+          <span class="crop-unit-text">/ kg</span>
+          ${lowStock ? '<span class="badge-low">Low stock</span>' : ''}
+        </div>
+
+        <div class="crop-farmer-meta">
+          Farmer: <strong>${escapeHtml(crop.farmer_name)}</strong> (${escapeHtml(crop.location || 'India')})
+        </div>
+
         ${biddingTag}
-        ${lowStock ? '<span class="badge-low">Low stock</span>' : ''}
-        <div class="crop-meta">₹${escapeHtml(crop.price_per_kg)}/kg · Farmer: <strong>${escapeHtml(crop.farmer_name)}</strong> (${escapeHtml(crop.location || 'India')})</div>
         ${harvestHtml}
-        <div class="stock-bar-track"><div class="stock-bar-fill" style="width:${stockPercent(crop.quantity_available)}%"></div></div>
+
+        <div class="stock-bar-track">
+          <div class="stock-bar-fill ${lowStock ? 'low' : ''}" style="width:${stockPercent(crop.quantity_available)}%"></div>
+        </div>
+
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <span style="font-size:13px; color:var(--ink-soft);">${escapeHtml(crop.quantity_available)} kg available</span>
+          <span style="font-size:12.5px; color:var(--ink-soft);">${escapeHtml(crop.quantity_available)} kg available</span>
           ${originLink}
         </div>
-        <p style="margin:0 0 12px; font-size:14px;">${escapeHtml(crop.description || '')}</p>
+
+        <p style="margin:0 0 12px; font-size:13px; line-height:1.4;">${crop.description ? escapeHtml(crop.description) : 'Direct-from-farm produce.'}</p>
 
         <!-- Order actions -->
         <div class="order-row">
           <input type="number" id="qty-${crop.id}" placeholder="Qty (kg)" min="1" max="${crop.quantity_available}" value="1">
-          <button onclick="placeOrder(${crop.id})">Order now</button>
+          <button class="btn-primary" onclick="placeOrder(${crop.id})">Order Now</button>
         </div>
 
         ${crop.bidding_enabled ? `
@@ -178,14 +394,15 @@ function renderCrops(crops) {
   });
 }
 
-document.getElementById('searchBox').addEventListener('input', applyFilters);
-document.getElementById('minPrice').addEventListener('input', applyFilters);
-document.getElementById('maxPrice').addEventListener('input', applyFilters);
+// Filter listeners
+document.getElementById('searchBox')?.addEventListener('input', applyFilters);
+document.getElementById('minPrice')?.addEventListener('input', applyFilters);
+document.getElementById('maxPrice')?.addEventListener('input', applyFilters);
 document.getElementById('sortSelect')?.addEventListener('change', applyFilters);
 document.getElementById('negotiableOnlyFilter')?.addEventListener('change', applyFilters);
 
 // Place direct order
-async function placeOrder(cropId) {
+window.placeOrder = async function(cropId) {
   const quantityInput = document.getElementById(`qty-${cropId}`);
   const quantity_ordered = quantityInput.value;
 
@@ -205,9 +422,10 @@ async function placeOrder(cropId) {
     });
     const data = await res.json();
     if (res.ok) {
-      showToast('Order placed successfully! Track its status below.', 'success');
+      showToast('Order placed successfully! Track its status under My Orders.', 'success');
       loadCrops();
       loadOrders();
+      loadBuyerStatsAndOverview();
     } else {
       showToast(data.error || 'Failed to place order', 'error');
     }
@@ -216,7 +434,7 @@ async function placeOrder(cropId) {
   } finally {
     setLoading(btn, false);
   }
-}
+};
 
 // ============================================================================
 // BUYER ORDERS & STATUS TIMELINE
@@ -226,37 +444,56 @@ async function loadOrders() {
     const res = await fetch(`${API_URL}/orders/buyer/${user.id}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    const orders = await res.json();
+    allBuyerOrders = await res.json();
 
     const orderList = document.getElementById('orderList');
+    if (!orderList) return;
     orderList.innerHTML = '';
 
-    if (!orders || orders.length === 0) {
-      orderList.innerHTML = '<div class="empty-state">No orders placed yet. Browse the marketplace and order directly from local farmers!</div>';
+    if (!allBuyerOrders || allBuyerOrders.length === 0) {
+      orderList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📦</div>
+          <h3>No purchase orders placed yet</h3>
+          <p>Browse our verified direct-farm produce catalog and order directly from local farmers.</p>
+          <button class="btn-primary" onclick="showBuyerSection('browseCropsView', 'Browse Crops', 'navBrowseCrops')">Go to Marketplace</button>
+        </div>
+      `;
       return;
     }
 
-    orders.forEach(order => {
+    allBuyerOrders.forEach(order => {
       orderList.innerHTML += `
         <div class="crop-card" style="margin-bottom:16px;">
           <div class="crop-header-row">
-            <strong>${escapeHtml(order.crop_name)}</strong>
+            <div>
+              <strong>${escapeHtml(order.crop_name)}</strong>
+              <span style="font-size:12px; color:var(--ink-muted); margin-left:8px;">Order #${order.id}</span>
+            </div>
             <span class="status-tag status-${escapeHtml(order.status)}">${escapeHtml(order.status)}</span>
           </div>
-          <div class="crop-meta">${escapeHtml(order.quantity)} kg · Total: <strong>₹${escapeHtml(order.total_price)}</strong> · Farmer: ${escapeHtml(order.farmer_name)} (${escapeHtml(order.farmer_location || 'India')})</div>
-          <div class="crop-meta" style="margin-top:-6px; font-size:12px;">Placed on: ${formatDate(order.created_at)}</div>
 
-          <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-            <button class="btn-secondary btn-small" onclick="openBuyerTimeline(${order.id})">🕒 View Timeline</button>
-            ${order.status === 'pending' ? `<button class="danger btn-small" onclick="cancelOrder(${order.id})">Cancel Order</button>` : ''}
-            <button class="toggle-messages btn-small" onclick="toggleMessages(${order.id}, ${order.farmer_id})">💬 Message Farmer</button>
+          <div class="crop-meta-row" style="margin: 4px 0 8px;">
+            <span style="font-size:14.5px; font-weight:600; color:var(--ink);">Quantity: ${escapeHtml(order.quantity)} kg</span>
+            <span style="color:var(--border);">·</span>
+            <span style="font-size:16px; font-weight:800; color:var(--primary);">Total: ₹${Number(order.total_price).toFixed(2)}</span>
           </div>
 
-          <div id="thread-${order.id}" style="display:none; margin-top:12px;">
-            <div class="message-thread" id="messages-${order.id}"></div>
+          <div class="crop-farmer-meta">
+            Farmer: <strong>${escapeHtml(order.farmer_name)}</strong> (${escapeHtml(order.farmer_location || 'India')}) · Placed: ${formatDate(order.created_at)}
+          </div>
+
+          <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+            <button class="btn-secondary btn-small" onclick="openBuyerTimeline(${order.id})">🕒 View Fulfillment Timeline</button>
+            ${order.status === 'pending' ? `<button class="danger btn-small" onclick="cancelOrder(${order.id})">Cancel Order</button>` : ''}
+            <button class="toggle-messages btn-small" onclick="toggleBuyerMessages(${order.id}, ${order.farmer_id})">💬 Message Farmer</button>
+          </div>
+
+          <div id="buyer-thread-${order.id}" style="display:none; margin-top:14px;">
+            <div class="message-thread" id="buyer-messages-${order.id}"></div>
             <div class="message-row">
-              <input type="text" id="msgInput-${order.id}" placeholder="Type message to farmer..." onkeypress="if(event.key === 'Enter') sendMessage(${order.id}, ${order.farmer_id})">
-              <button onclick="sendMessage(${order.id}, ${order.farmer_id})">Send</button>
+              <input type="text" id="buyer-msgInput-${order.id}" placeholder="Type message to farmer..." onkeypress="if(event.key === 'Enter') sendBuyerMessage(${order.id}, ${order.farmer_id})">
+              <button onclick="sendBuyerMessage(${order.id}, ${order.farmer_id})">Send</button>
             </div>
           </div>
         </div>
@@ -267,7 +504,7 @@ async function loadOrders() {
   }
 }
 
-async function cancelOrder(orderId) {
+window.cancelOrder = async function(orderId) {
   if (!confirm('Cancel this pending order? This will release reserved produce back to the marketplace.')) return;
   try {
     const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
@@ -280,16 +517,17 @@ async function cancelOrder(orderId) {
       showToast('Order cancelled', 'success');
       loadOrders();
       loadCrops();
+      loadBuyerStatsAndOverview();
     } else {
       showToast(data.error || 'Failed to cancel order', 'error');
     }
   } catch (err) {
     showToast('Could not connect to server', 'error');
   }
-}
+};
 
-// Buyer Timeline Modal
-async function openBuyerTimeline(orderId) {
+// Buyer Order Timeline Modal
+window.openBuyerTimeline = async function(orderId) {
   const modal = document.getElementById('buyerTimelineModal');
   const infoEl = document.getElementById('buyerTimelineOrderInfo');
   const stepperEl = document.getElementById('buyerTimelineStepper');
@@ -326,34 +564,86 @@ async function openBuyerTimeline(orderId) {
   } catch (err) {
     infoEl.textContent = 'Failed to load timeline.';
   }
-}
+};
 
-function closeBuyerTimelineModal() {
+window.closeBuyerTimelineModal = function() {
   document.getElementById('buyerTimelineModal').style.display = 'none';
+};
+
+// ============================================================================
+// DEDICATED TRACK ORDERS VIEW
+// ============================================================================
+function loadTrackOrdersView() {
+  const select = document.getElementById('trackOrderSelect');
+  if (!select) return;
+
+  select.innerHTML = '<option value="" disabled selected>Select an active purchase order to track...</option>';
+  allBuyerOrders.forEach(o => {
+    select.innerHTML += `<option value="${o.id}">Order #${o.id} — ${escapeHtml(o.crop_name)} (${o.quantity} kg) [${o.status.toUpperCase()}]</option>`;
+  });
 }
 
-// Messaging
-let chatIntervals = {};
+window.renderDedicatedTracking = async function(orderId) {
+  const output = document.getElementById('dedicatedTrackingOutput');
+  if (!output || !orderId) return;
 
-async function toggleMessages(orderId) {
-  const thread = document.getElementById(`thread-${orderId}`);
+  output.innerHTML = '<div class="notif-empty">Loading fulfillment stepper...</div>';
+
+  try {
+    const res = await fetch(`${API_URL}/orders/${orderId}/timeline`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      output.innerHTML = `
+        <div style="background:var(--bg-app); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px; margin-bottom:16px;">
+          <h3 style="margin:0 0 6px;">Order #${data.order.id} — ${escapeHtml(data.order.crop_name)}</h3>
+          <p style="margin:0; font-size:13.5px;">Quantity: ${data.order.quantity} kg · Total: ₹${Number(data.order.total_price).toFixed(2)} · Status: <span class="status-tag status-${data.order.status}">${data.order.status}</span></p>
+        </div>
+        <div class="timeline-stepper">
+          ${data.timeline.map(step => `
+            <div class="timeline-step">
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <div class="timeline-status">${escapeHtml(step.status.toUpperCase())} <small style="color:var(--ink-soft); font-weight:normal;">(${escapeHtml(step.actor_role)})</small></div>
+                <div class="timeline-note">${escapeHtml(step.note || '')}</div>
+                <div class="timeline-time">${formatDate(step.created_at)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+  } catch (err) {
+    output.innerHTML = '<div class="empty-state">Could not load tracking details.</div>';
+  }
+};
+
+// ============================================================================
+// MESSAGING (BUYER)
+// ============================================================================
+let buyerChatIntervals = {};
+
+window.toggleBuyerMessages = async function(orderId) {
+  const thread = document.getElementById(`buyer-thread-${orderId}`);
   const isHidden = thread.style.display === 'none';
   thread.style.display = isHidden ? 'block' : 'none';
   if (isHidden) {
-    await loadMessages(orderId);
-    chatIntervals[orderId] = setInterval(() => loadMessages(orderId), 2500);
+    await loadBuyerMessages(orderId);
+    buyerChatIntervals[orderId] = setInterval(() => loadBuyerMessages(orderId), 2500);
   } else {
-    clearInterval(chatIntervals[orderId]);
-    delete chatIntervals[orderId];
+    clearInterval(buyerChatIntervals[orderId]);
+    delete buyerChatIntervals[orderId];
   }
-}
+};
 
-async function loadMessages(orderId) {
+async function loadBuyerMessages(orderId) {
   const res = await fetch(`${API_URL}/messages/order/${orderId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   const messages = await res.json();
-  const box = document.getElementById(`messages-${orderId}`);
+  const box = document.getElementById(`buyer-messages-${orderId}`);
   if (!box) return;
 
   if (box.dataset.msgCount == messages.length) return;
@@ -370,8 +660,8 @@ async function loadMessages(orderId) {
   box.scrollTop = box.scrollHeight;
 }
 
-async function sendMessage(orderId, receiverId) {
-  const input = document.getElementById(`msgInput-${orderId}`);
+window.sendBuyerMessage = async function(orderId, receiverId) {
+  const input = document.getElementById(`buyer-msgInput-${orderId}`);
   const message_text = input.value.trim();
   if (!message_text) return;
 
@@ -383,34 +673,54 @@ async function sendMessage(orderId, receiverId) {
     });
     if (res.ok) {
       input.value = '';
-      loadMessages(orderId);
+      loadBuyerMessages(orderId);
     } else {
       showToast('Failed to send message', 'error');
     }
   } catch (err) {
     showToast('Could not connect to server', 'error');
   }
+};
+
+function loadBuyerMessagesView() {
+  const container = document.getElementById('buyerActiveThreadsList');
+  if (!container) return;
+
+  if (allBuyerOrders.length === 0) {
+    container.innerHTML = '<div class="empty-state">No orders placed yet. Chat with farmers becomes available once an order is created.</div>';
+    return;
+  }
+
+  container.innerHTML = allBuyerOrders.map(o => `
+    <div style="background:var(--bg-app); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <strong>Order #${o.id} — ${escapeHtml(o.crop_name)}</strong>
+        <div style="font-size:12.5px; color:var(--ink-soft);">Farmer: ${escapeHtml(o.farmer_name)} (${escapeHtml(o.farmer_location || 'India')})</div>
+      </div>
+      <button class="btn-primary btn-small" onclick="showBuyerSection('myOrdersView', 'My Orders', 'navMyOrders'); toggleBuyerMessages(${o.id}, ${o.farmer_id});">Open Conversation</button>
+    </div>
+  `).join('');
 }
 
 // ============================================================================
 // PRICE NEGOTIATION & BIDDING (BUYER)
 // ============================================================================
-function openBidModal(crop) {
+window.openBidModal = function(crop) {
   document.getElementById('bidCropId').value = crop.id;
   document.getElementById('bidModalCropInfo').innerHTML = `
-    Listing: <strong>${escapeHtml(crop.name)}</strong> · Listed at: <strong>₹${crop.price}/kg</strong>
-    <br>Stock available: ${crop.stock} kg · Farmer: ${escapeHtml(crop.farmer)}
+    <strong>${escapeHtml(crop.name)}</strong> · Listed Price: <strong>₹${crop.price}/kg</strong>
+    <br>Available Stock: ${crop.stock} kg · Farmer: ${escapeHtml(crop.farmer)}
   `;
   document.getElementById('bidQty').value = '1';
   document.getElementById('bidQty').max = crop.stock;
   document.getElementById('bidPrice').value = '';
   document.getElementById('bidNote').value = '';
   document.getElementById('bidModal').style.display = 'flex';
-}
+};
 
-function closeBidModal() {
+window.closeBidModal = function() {
   document.getElementById('bidModal').style.display = 'none';
-}
+};
 
 document.getElementById('bidForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -427,7 +737,7 @@ document.getElementById('bidForm').addEventListener('submit', async (e) => {
     });
     const data = await res.json();
     if (res.ok) {
-      showToast('Offer submitted to farmer! You will be notified on response.', 'success');
+      showToast('Offer submitted to farmer! You will be notified upon review.', 'success');
       closeBidModal();
       loadBuyerBids();
     } else {
@@ -440,6 +750,7 @@ document.getElementById('bidForm').addEventListener('submit', async (e) => {
 
 async function loadBuyerBids() {
   const container = document.getElementById('buyerBidList');
+  if (!container) return;
   container.innerHTML = '<div class="notif-empty">Loading your negotiations...</div>';
 
   try {
@@ -453,7 +764,13 @@ async function loadBuyerBids() {
     if (badge) badge.textContent = pendingCount;
 
     if (!bids || bids.length === 0) {
-      container.innerHTML = '<div class="empty-state">No price negotiations opened yet. Look for crops with "🤝 Price Negotiable" in the marketplace!</div>';
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🤝</div>
+          <h3>No price negotiations opened yet</h3>
+          <p>Look for produce with the "🤝 Price Negotiable" tag in the marketplace to submit custom counteroffers!</p>
+        </div>
+      `;
       return;
     }
 
@@ -470,11 +787,11 @@ async function loadBuyerBids() {
           <div class="crop-meta">Farmer: <strong>${escapeHtml(bid.farmer_name)}</strong> (${escapeHtml(bid.farmer_location || 'India')})</div>
           <div class="crop-meta" style="margin-top:-6px;">
             Active Offer: <strong>₹${bid.offered_price_per_kg}/kg</strong> for <strong>${bid.quantity} kg</strong> (Total: ₹${totalOffer})
-            <br><small style="color:var(--ink-soft)">Original price: ₹${bid.original_price}/kg · Latest move by: ${bid.current_by.toUpperCase()}</small>
+            <br><small style="color:var(--ink-soft)">Original list price: ₹${bid.original_price}/kg · Turn: ${bid.current_by.toUpperCase()}</small>
           </div>
 
           ${isFarmerTurn ? `
-            <div style="background:var(--wheat); padding:10px 14px; border-radius:8px; margin: 10px 0; font-size:13px;">
+            <div style="background:var(--accent-subtle); padding:10px 14px; border-radius:8px; margin: 10px 0; font-size:13px; color:var(--accent-hover);">
               💡 <strong>Farmer Counteroffer:</strong> The farmer proposed ₹${bid.offered_price_per_kg}/kg. You can accept this rate or counter back!
             </div>
             <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
@@ -495,7 +812,7 @@ async function loadBuyerBids() {
   }
 }
 
-async function acceptBuyerBid(bidId, cropName) {
+window.acceptBuyerBid = async function(bidId, cropName) {
   if (!confirm(`Accept this negotiated price for ${cropName} and confirm your order?`)) return;
 
   try {
@@ -508,16 +825,17 @@ async function acceptBuyerBid(bidId, cropName) {
       showToast(`Offer accepted! Order #${data.orderId} created.`, 'success');
       loadBuyerBids();
       loadOrders();
+      loadBuyerStatsAndOverview();
     } else {
       showToast(data.error || 'Failed to accept offer', 'error');
     }
   } catch (err) {
     showToast('Could not connect to server', 'error');
   }
-}
+};
 
-async function rejectBuyerBid(bidId) {
-  if (!confirm('Reject this offer and end negotiation?')) return;
+window.rejectBuyerBid = async function(bidId) {
+  if (!confirm('Reject this offer and conclude negotiation?')) return;
   try {
     const res = await fetch(`${API_URL}/bids/${bidId}/reject`, {
       method: 'POST',
@@ -532,19 +850,19 @@ async function rejectBuyerBid(bidId) {
   } catch (err) {
     showToast('Could not connect to server', 'error');
   }
-}
+};
 
-function openBuyerCounterModal(bidId, cropName, currentOffer, qty) {
+window.openBuyerCounterModal = function(bidId, cropName, currentOffer, qty) {
   document.getElementById('buyerCounterBidId').value = bidId;
-  document.getElementById('buyerCounterInfo').innerHTML = `Responding to farmer's offer for <strong>${cropName}</strong> (₹${currentOffer}/kg for ${qty} kg)`;
+  document.getElementById('buyerCounterInfo').innerHTML = `Responding to farmer's counteroffer for <strong>${cropName}</strong> (₹${currentOffer}/kg for ${qty} kg)`;
   document.getElementById('buyerCounterPrice').value = '';
   document.getElementById('buyerCounterNote').value = '';
   document.getElementById('buyerCounterModal').style.display = 'flex';
-}
+};
 
-function closeBuyerCounterModal() {
+window.closeBuyerCounterModal = function() {
   document.getElementById('buyerCounterModal').style.display = 'none';
-}
+};
 
 document.getElementById('buyerCounterForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -576,14 +894,21 @@ document.getElementById('buyerCounterForm').addEventListener('submit', async (e)
 // ============================================================================
 async function loadBuyerGroupBuys() {
   const container = document.getElementById('buyerGroupBuyList');
-  container.innerHTML = '<div class="notif-empty">Loading active group buys...</div>';
+  if (!container) return;
+  container.innerHTML = '<div class="notif-empty">Loading active community group buys...</div>';
 
   try {
     const res = await fetch(`${API_URL}/group-buys`);
     const campaigns = await res.json();
 
     if (!campaigns || campaigns.length === 0) {
-      container.innerHTML = '<div class="empty-state">No active community group buying campaigns right now. Farmers launch them regularly for bulk season harvests!</div>';
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">👥</div>
+          <h3>No active group buying campaigns right now</h3>
+          <p>Local farmers launch bulk co-op campaigns regularly for wholesale seasonal harvests.</p>
+        </div>
+      `;
       return;
     }
 
@@ -599,20 +924,20 @@ async function loadBuyerGroupBuys() {
           </div>
           <div class="crop-meta">Produce: <strong>${escapeHtml(gb.crop_name)}</strong> · Farmer: ${escapeHtml(gb.farmer_name)} (${escapeHtml(gb.farmer_location || 'India')})</div>
           <div class="crop-meta" style="margin-top:-6px;">
-            Group Rate: <strong style="color:var(--leaf-dark); font-size:16px;">₹${gb.discount_price_per_kg}/kg</strong> 
-            <small style="color:var(--ink-soft); text-decoration:line-through;">(Standard: ₹${gb.original_price}/kg)</small>
+            Group Wholesale Rate: <strong style="color:var(--primary); font-size:18px;">₹${gb.discount_price_per_kg}/kg</strong> 
+            <small style="color:var(--ink-soft); text-decoration:line-through; margin-left:6px;">Standard: ₹${gb.original_price}/kg</small>
           </div>
 
-          <!-- Target Progress Bar -->
+          <!-- Progress Bar -->
           <div style="margin: 14px 0 8px;">
-            <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:4px;">
+            <div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; margin-bottom:4px;">
               <span>Volume Target Progress</span>
               <span>${gb.committed_quantity} / ${gb.target_quantity} kg (${pct}%)</span>
             </div>
-            <div class="stock-bar-track"><div class="stock-bar-fill" style="width:${pct}%; background:var(--leaf);"></div></div>
+            <div class="stock-bar-track"><div class="stock-bar-fill" style="width:${pct}%;"></div></div>
             <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); margin-top:4px;">
-              <span>${remainingKg} kg needed to complete target</span>
-              <span>Deadline: ${formatDate(gb.end_date)}</span>
+              <span>${remainingKg} kg needed to unlock rate</span>
+              <span>Cutoff: ${formatDate(gb.end_date)}</span>
             </div>
           </div>
 
@@ -629,31 +954,34 @@ async function loadBuyerGroupBuys() {
   }
 }
 
-function openJoinGbModal(gb) {
+window.openJoinGbModal = function(gb) {
   document.getElementById('joinGbId').value = gb.id;
   document.getElementById('joinGbRate').value = gb.discount_price_per_kg;
   document.getElementById('joinGbInfo').innerHTML = `
     Campaign: <strong>${escapeHtml(gb.title)}</strong> (${escapeHtml(gb.crop_name)})<br>
-    Wholesale Rate: <strong>₹${gb.discount_price_per_kg}/kg</strong> · Target left: ${gb.target_quantity - gb.committed_quantity} kg
+    Wholesale Rate: <strong>₹${gb.discount_price_per_kg}/kg</strong> · Remaining to target: ${gb.target_quantity - gb.committed_quantity} kg
   `;
   document.getElementById('joinGbQty').value = '5';
   updateJoinGbCalculatedTotal();
   document.getElementById('joinGbModal').style.display = 'flex';
-}
+};
 
-function closeJoinGbModal() {
+window.closeJoinGbModal = function() {
   document.getElementById('joinGbModal').style.display = 'none';
-}
+};
 
 function updateJoinGbCalculatedTotal() {
-  const qty = parseFloat(document.getElementById('joinGbQty').value) || 0;
-  const rate = parseFloat(document.getElementById('joinGbRate').value) || 0;
+  const qty = parseFloat(document.getElementById('joinGbQty')?.value) || 0;
+  const rate = parseFloat(document.getElementById('joinGbRate')?.value) || 0;
   const total = (qty * rate).toFixed(2);
   const totalEl = document.getElementById('joinGbCalculatedTotal');
   if (totalEl) totalEl.textContent = `Estimated Order Total: ₹${total}`;
 }
 
-document.getElementById('joinGbQty').addEventListener('input', updateJoinGbCalculatedTotal);
+const joinGbQtyInput = document.getElementById('joinGbQty');
+if (joinGbQtyInput) {
+  joinGbQtyInput.addEventListener('input', updateJoinGbCalculatedTotal);
+}
 
 document.getElementById('joinGbForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -672,6 +1000,7 @@ document.getElementById('joinGbForm').addEventListener('submit', async (e) => {
       closeJoinGbModal();
       loadBuyerGroupBuys();
       loadOrders();
+      loadBuyerStatsAndOverview();
     } else {
       showToast(data.error || 'Failed to join group buy', 'error');
     }
@@ -680,7 +1009,198 @@ document.getElementById('joinGbForm').addEventListener('submit', async (e) => {
   }
 });
 
-// Initial boot
+// ============================================================================
+// PRICE COMPARISON BENCHMARKING
+// ============================================================================
+async function loadPriceComparison() {
+  const container = document.getElementById('priceComparisonContent');
+  if (!container) return;
+
+  try {
+    const res = await fetch(`${API_URL}/crops`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const crops = await res.json();
+
+    if (!crops || crops.length === 0) {
+      container.innerHTML = '<div class="empty-state">No produce listed to compare prices.</div>';
+      return;
+    }
+
+    // Group crops by category
+    const categoryStats = {};
+    crops.forEach(c => {
+      const cat = c.category || 'Other';
+      if (!categoryStats[cat]) categoryStats[cat] = { count: 0, sum: 0, min: Infinity, max: -Infinity, items: [] };
+      const price = Number(c.price_per_kg);
+      categoryStats[cat].count++;
+      categoryStats[cat].sum += price;
+      if (price < categoryStats[cat].min) categoryStats[cat].min = price;
+      if (price > categoryStats[cat].max) categoryStats[cat].max = price;
+      categoryStats[cat].items.push(c);
+    });
+
+    container.innerHTML = `
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Produce Category</th>
+              <th>Listings</th>
+              <th>Lowest Price</th>
+              <th>Average Price</th>
+              <th>Highest Price</th>
+              <th>Direct Fair Trade Advantage</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.keys(categoryStats).map(cat => {
+              const s = categoryStats[cat];
+              const avg = (s.sum / s.count).toFixed(1);
+              return `
+                <tr>
+                  <td><strong>${escapeHtml(cat)}</strong></td>
+                  <td>${s.count} available</td>
+                  <td style="color:var(--secondary); font-weight:700;">₹${s.min}/kg</td>
+                  <td><strong>₹${avg}/kg</strong></td>
+                  <td>₹${s.max}/kg</td>
+                  <td><span class="status-tag status-active">Direct Grower Pricing</span></td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = '<div class="empty-state">Failed to calculate price comparisons.</div>';
+  }
+}
+
+// ============================================================================
+// DEDICATED AI CHAT FORM WIRING
+// ============================================================================
+const dedicatedAiForm = document.getElementById('dedicatedAiForm');
+const dedicatedAiInput = document.getElementById('dedicatedAiInput');
+if (dedicatedAiForm && dedicatedAiInput) {
+  dedicatedAiForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const query = dedicatedAiInput.value.trim();
+    if (!query) return;
+    dedicatedAiInput.value = '';
+    await handleAssistantQuery(query, 'dedicatedAiStream');
+  });
+}
+
+// ============================================================================
+// TRACEABILITY CODE LOOKUP
+// ============================================================================
+window.lookupTraceabilityCode = async function() {
+  const code = (document.getElementById('traceabilityCodeInput')?.value || '').trim();
+  const resultBox = document.getElementById('buyerTraceResult');
+  if (!code || !resultBox) return;
+
+  resultBox.innerHTML = '<div class="notif-empty">Verifying digital origin...</div>';
+
+  try {
+    const res = await fetch(`${API_URL}/traceability/code/${encodeURIComponent(code)}`);
+    if (!res.ok) throw new Error('Not found');
+    const data = await res.json();
+
+    resultBox.innerHTML = `
+      <div class="card-box" style="background:var(--bg-app); border:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="margin:0; font-size:18px;">${escapeHtml(data.crop_name)}</h3>
+          <span class="status-tag status-active">🛡️ VERIFIED HARVEST ORIGIN</span>
+        </div>
+        <div class="trace-grid-stats" style="margin-bottom:12px;">
+          <div class="trace-stat-box">
+            <span class="trace-stat-label">Farmer / Producer</span>
+            <strong class="trace-stat-val">${escapeHtml(data.farmer_name)}</strong>
+          </div>
+          <div class="trace-stat-box">
+            <span class="trace-stat-label">Harvest Location</span>
+            <strong class="trace-stat-val">${escapeHtml(data.farmer_location || 'India')}</strong>
+          </div>
+          <div class="trace-stat-box">
+            <span class="trace-stat-label">Harvest Date</span>
+            <strong class="trace-stat-val">${formatDate(data.harvest_date)}</strong>
+          </div>
+          <div class="trace-stat-box">
+            <span class="trace-stat-label">Listing Rate</span>
+            <strong class="trace-stat-val">₹${data.price_per_kg}/kg</strong>
+          </div>
+        </div>
+        <a href="traceability.html?code=${data.traceability_code}" target="_blank" class="btn-primary btn-small">Open Full Digital Certificate →</a>
+      </div>
+    `;
+  } catch (err) {
+    resultBox.innerHTML = `
+      <div class="empty-state" style="color:var(--danger);">
+        <strong>Certificate Not Found</strong>
+        <p>No verified crop listing matches the code "${escapeHtml(code)}". Please check the spelling.</p>
+      </div>
+    `;
+  }
+};
+
+// ============================================================================
+// DEDICATED NOTIFICATIONS VIEW (BUYER)
+// ============================================================================
+async function loadBuyerDedicatedNotifications() {
+  const container = document.getElementById('buyerDedicatedNotifList');
+  if (!container) return;
+
+  try {
+    const res = await fetch(`${API_URL}/notifications`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const notifications = await res.json();
+
+    if (!notifications || notifications.length === 0) {
+      container.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+      return;
+    }
+
+    container.innerHTML = notifications.map(n => `
+      <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markNotifRead(${n.id}, '${escapeHtml(n.link || '')}', '${token}')">
+        <div class="notif-item-header">
+          <span class="notif-type-tag notif-type-${escapeHtml(n.type)}">${escapeHtml(n.type)}</span>
+          <span class="notif-time">${formatDate(n.created_at)}</span>
+        </div>
+        <div class="notif-item-title">${escapeHtml(n.title)}</div>
+        <div class="notif-item-msg">${escapeHtml(n.message)}</div>
+      </div>
+    `).join('');
+  } catch (err) {
+    container.innerHTML = '<div class="notif-empty">Could not load notifications.</div>';
+  }
+}
+
+// ============================================================================
+// BUYER PROFILE & SETTINGS
+// ============================================================================
+function loadBuyerProfile() {
+  const nameEl = document.getElementById('buyerProfileName');
+  const emailEl = document.getElementById('buyerProfileEmail');
+  const locEl = document.getElementById('buyerProfileLocation');
+  const avatarEl = document.getElementById('buyerProfileLargeAvatar');
+
+  if (nameEl) nameEl.textContent = user.name;
+  if (emailEl) emailEl.textContent = user.email || 'buyer@farmdirect.in';
+  if (locEl) locEl.textContent = user.location || 'Pune, India';
+  if (avatarEl) avatarEl.textContent = getInitials(user.name);
+}
+
+function loadBuyerSettings() {
+  const apiEl = document.getElementById('buyerSettingsApiUrl');
+  if (apiEl) {
+    apiEl.textContent = window.IS_LOCAL ? 'Localhost (Development)' : 'Render Production Cloud API';
+  }
+}
+
+// Initial Boot
+loadBuyerStatsAndOverview();
 loadCrops();
 loadOrders();
 loadBuyerBids();

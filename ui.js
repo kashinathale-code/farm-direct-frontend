@@ -1,4 +1,8 @@
-// Shared UI helpers: toasts + button loading states + notifications + AI assistant
+// ============================================================================
+// FARM DIRECT — SHARED UI UTILITIES & INTERACTION HELPERS
+// ============================================================================
+
+// 1. Toast Notification System
 function showToast(message, type = 'success') {
   let container = document.getElementById('toast-container');
   if (!container) {
@@ -8,23 +12,36 @@ function showToast(message, type = 'success') {
   }
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.textContent = message;
+  
+  // Icon based on type
+  const icon = type === 'success' 
+    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+
+  toast.innerHTML = `${icon}<span>${escapeHtml(message)}</span>`;
   container.appendChild(toast);
-  setTimeout(() => toast.remove(), 3500);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
 }
 
+// 2. Button Loading State
 function setLoading(button, isLoading) {
   if (!button) return;
   button.disabled = isLoading;
   button.classList.toggle('loading', isLoading);
 }
 
+// 3. Stock Percentage Helper
 function stockPercent(available, cap = 20) {
   const pct = Math.min(100, (available / cap) * 100);
   return Math.max(6, pct); // never fully invisible
 }
 
-// Security: Escapes user text to prevent XSS attacks when inserting into innerHTML
+// 4. Security: Safe HTML escaping for user-supplied data
 function escapeHtml(str) {
   if (str == null) return '';
   return String(str)
@@ -35,7 +52,7 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-// Client-side image compression: resizes photo to max width 640px and returns JPEG data URL (quality 0.7)
+// 5. Client-side image compression (max width 640px, JPEG quality 0.7)
 function compressImage(file) {
   return new Promise((resolve, reject) => {
     if (!file || !file.type.startsWith('image/')) {
@@ -75,7 +92,7 @@ function compressImage(file) {
   });
 }
 
-// Format date helper (YYYY-MM-DD)
+// 6. Date formatting helper (Indian Locale / International Standard)
 function formatDate(dateStr) {
   if (!dateStr) return 'N/A';
   try {
@@ -86,6 +103,177 @@ function formatDate(dateStr) {
   }
 }
 
+// 7. Get Initials from name
+function getInitials(name) {
+  if (!name) return 'FD';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// ============================================================================
+// SIDEBAR & TOP HEADER CONTROLLER
+// ============================================================================
+function initDashboardShell(user, activeNavId = 'navOverview') {
+  const layout = document.querySelector('.dashboard-layout');
+  const sidebar = document.getElementById('appSidebar');
+  const collapseBtn = document.getElementById('sidebarCollapseBtn');
+  const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  
+  if (!layout || !sidebar) return;
+
+  // Restore collapsed state from localStorage (desktop only)
+  const isCollapsed = localStorage.getItem('fd_sidebar_collapsed') === 'true';
+  if (isCollapsed && window.innerWidth > 1024) {
+    layout.classList.add('sidebar-collapsed');
+  }
+
+  // Toggle Collapse on Desktop
+  if (collapseBtn) {
+    collapseBtn.addEventListener('click', () => {
+      layout.classList.toggle('sidebar-collapsed');
+      const collapsedNow = layout.classList.contains('sidebar-collapsed');
+      localStorage.setItem('fd_sidebar_collapsed', collapsedNow ? 'true' : 'false');
+    });
+  }
+
+  // Mobile Drawer Toggle
+  if (mobileMenuBtn && backdrop) {
+    mobileMenuBtn.addEventListener('click', () => {
+      sidebar.classList.add('drawer-open');
+      backdrop.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+
+    const closeDrawer = () => {
+      sidebar.classList.remove('drawer-open');
+      backdrop.classList.remove('active');
+      document.body.style.overflow = '';
+    };
+
+    backdrop.addEventListener('click', closeDrawer);
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('drawer-open')) {
+        closeDrawer();
+      }
+    });
+
+    // Close drawer when any nav item is clicked on mobile
+    sidebar.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        if (window.innerWidth <= 1024) {
+          closeDrawer();
+        }
+      });
+    });
+  }
+
+  // Initialize User Profile in Header and Sidebar
+  if (user) {
+    const initials = getInitials(user.name);
+    
+    // Header
+    const headerAvatar = document.getElementById('headerUserAvatar');
+    const headerName = document.getElementById('headerUserName');
+    const headerRole = document.getElementById('headerUserRole');
+    if (headerAvatar) {
+      headerAvatar.textContent = initials;
+      headerAvatar.className = `user-avatar ${user.role || 'farmer'}`;
+    }
+    if (headerName) headerName.textContent = user.name;
+    if (headerRole) headerRole.textContent = user.role;
+
+    // Sidebar Footer
+    const sidebarAvatar = document.getElementById('sidebarUserAvatar');
+    const sidebarName = document.getElementById('sidebarUserName');
+    const sidebarRole = document.getElementById('sidebarUserRole');
+    if (sidebarAvatar) {
+      sidebarAvatar.textContent = initials;
+      sidebarAvatar.className = `user-avatar ${user.role || 'farmer'}`;
+    }
+    if (sidebarName) sidebarName.textContent = user.name;
+    if (sidebarRole) sidebarRole.textContent = user.role;
+
+    // Dropdown details
+    const dropdownFullName = document.getElementById('dropdownFullName');
+    const dropdownEmail = document.getElementById('dropdownEmail');
+    const dropdownRoleBadge = document.getElementById('dropdownRoleBadge');
+    if (dropdownFullName) dropdownFullName.textContent = user.name;
+    if (dropdownEmail) dropdownEmail.textContent = user.email || `${user.role}@farmdirect.in`;
+    if (dropdownRoleBadge) dropdownRoleBadge.textContent = user.role.toUpperCase();
+  }
+
+  // Header User Dropdown Menu
+  const userProfileBtn = document.getElementById('userProfileBtn');
+  const userDropdown = document.getElementById('userProfileDropdown');
+  if (userProfileBtn && userDropdown) {
+    userProfileBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isExpanded = userProfileBtn.getAttribute('aria-expanded') === 'true';
+      userProfileBtn.setAttribute('aria-expanded', !isExpanded);
+      userDropdown.classList.toggle('show', !isExpanded);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!userDropdown.contains(e.target) && !userProfileBtn.contains(e.target)) {
+        userDropdown.classList.remove('show');
+        userProfileBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && userDropdown.classList.contains('show')) {
+        userDropdown.classList.remove('show');
+        userProfileBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  // Set active nav item
+  if (activeNavId) {
+    const activeEl = document.getElementById(activeNavId);
+    if (activeEl) {
+      document.querySelectorAll('.app-sidebar .nav-item').forEach(i => i.classList.remove('active'));
+      activeEl.classList.add('active');
+    }
+  }
+}
+
+// Helper to switch view tabs in dashboard
+function switchDashboardView(viewId, breadcrumbTitle, activeNavBtnId) {
+  // Hide all views
+  document.querySelectorAll('.page-view').forEach(view => {
+    view.classList.remove('active');
+  });
+
+  // Show target view
+  const targetView = document.getElementById(viewId);
+  if (targetView) {
+    targetView.classList.add('active');
+  }
+
+  // Update breadcrumb
+  const breadcrumbEl = document.getElementById('headerPageTitle');
+  if (breadcrumbEl && breadcrumbTitle) {
+    breadcrumbEl.textContent = breadcrumbTitle;
+  }
+
+  // Update active sidebar state
+  if (activeNavBtnId) {
+    document.querySelectorAll('.app-sidebar .nav-item').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    const activeBtn = document.getElementById(activeNavBtnId);
+    if (activeBtn) activeBtn.classList.add('active');
+  }
+
+  // Scroll main content to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // ============================================================================
 // PERSISTENT NOTIFICATION SYSTEM
 // ============================================================================
@@ -94,60 +282,39 @@ let notificationInterval = null;
 async function initNotificationSystem(token) {
   if (!token) return;
 
-  const userMenu = document.querySelector('.user-menu');
-  if (!userMenu) return;
+  const bellBtn = document.getElementById('notifBellBtn');
+  const dropdown = document.getElementById('notifDropdown');
+  const markAllBtn = document.getElementById('notifMarkAllReadBtn');
+  const notifContainer = document.getElementById('notificationContainer');
 
-  // Create notification bell and dropdown container if not present
-  if (!document.getElementById('notificationContainer')) {
-    const notifWrap = document.createElement('div');
-    notifWrap.id = 'notificationContainer';
-    notifWrap.className = 'notif-container';
-    notifWrap.innerHTML = `
-      <button id="notifBellBtn" class="notif-bell-btn" title="Notifications" aria-label="Notifications">
-        🔔<span id="notifBadge" class="notif-badge" style="display:none">0</span>
-      </button>
-      <div id="notifDropdown" class="notif-dropdown" style="display:none">
-        <div class="notif-header">
-          <strong>Notifications</strong>
-          <button id="notifMarkAllReadBtn" class="btn-text">Mark all read</button>
-        </div>
-        <div id="notifList" class="notif-list">
-          <div class="notif-empty">Loading notifications...</div>
-        </div>
-      </div>
-    `;
-    userMenu.insertBefore(notifWrap, userMenu.firstChild);
-
-    // Event listeners
-    const bellBtn = document.getElementById('notifBellBtn');
-    const dropdown = document.getElementById('notifDropdown');
-    const markAllBtn = document.getElementById('notifMarkAllReadBtn');
-
+  if (bellBtn && dropdown) {
     bellBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const isVisible = dropdown.style.display === 'block';
-      dropdown.style.display = isVisible ? 'none' : 'block';
+      const isVisible = dropdown.classList.contains('show');
+      dropdown.classList.toggle('show', !isVisible);
       if (!isVisible) loadNotificationsList(token);
     });
 
     document.addEventListener('click', (e) => {
-      if (!notifWrap.contains(e.target)) {
-        dropdown.style.display = 'none';
+      if (notifContainer && !notifContainer.contains(e.target)) {
+        dropdown.classList.remove('show');
       }
     });
 
-    markAllBtn.addEventListener('click', async () => {
-      try {
-        await fetch(`${window.API_URL || API_BASE_URL}/notifications/read-all`, {
-          method: 'PUT',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        loadUnreadCount(token);
-        loadNotificationsList(token);
-      } catch (err) {
-        console.error(err);
-      }
-    });
+    if (markAllBtn) {
+      markAllBtn.addEventListener('click', async () => {
+        try {
+          await fetch(`${window.API_URL || API_BASE_URL}/notifications/read-all`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          loadUnreadCount(token);
+          loadNotificationsList(token);
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    }
   }
 
   // Load initial unread count
@@ -166,6 +333,8 @@ async function loadUnreadCount(token) {
     if (!res.ok) return;
     const data = await res.json();
     const badge = document.getElementById('notifBadge');
+    const unreadPill = document.getElementById('notifUnreadPill');
+    
     if (badge) {
       if (data.count > 0) {
         badge.textContent = data.count > 99 ? '99+' : data.count;
@@ -173,6 +342,10 @@ async function loadUnreadCount(token) {
       } else {
         badge.style.display = 'none';
       }
+    }
+
+    if (unreadPill) {
+      unreadPill.textContent = `${data.count} new`;
     }
   } catch (err) {
     // Silent fail on polling errors
@@ -234,15 +407,23 @@ function initAIAssistant() {
   assistantWrap.innerHTML = `
     <!-- Floating toggle button -->
     <button id="aiToggleBtn" class="ai-toggle-btn" aria-label="Open Farm Direct AI Assistant">
-      <span class="ai-toggle-icon">🌱</span>
-      <span class="ai-toggle-text">Ask AI</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/>
+        <path d="M7 13c3 0 7-2 9-8-2 6-4 9-9 9z"/>
+        <path d="M12 22V12"/>
+      </svg>
+      <span>Ask AI</span>
     </button>
 
     <!-- Chat Modal Window -->
     <div id="aiChatWindow" class="ai-chat-window" style="display:none">
       <div class="ai-chat-header">
         <div class="ai-header-title">
-          <span class="ai-avatar">🚜</span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/>
+            <path d="M7 13c3 0 7-2 9-8-2 6-4 9-9 9z"/>
+            <path d="M12 22V12"/>
+          </svg>
           <div>
             <strong>Farm Direct Assistant</strong>
             <span class="ai-status"><span class="pulse-dot"></span> Live Market Intelligence</span>
@@ -254,7 +435,7 @@ function initAIAssistant() {
       <!-- Quick prompts -->
       <div class="ai-quick-prompts">
         <button class="ai-chip" onclick="sendQuickPrompt('Which crops fit a budget under ₹60/kg?')">Under ₹60/kg</button>
-        <button class="ai-chip" onclick="sendQuickPrompt('Compare current vegetable prices')">Compare Vegetables</button>
+        <button class="ai-chip" onclick="sendQuickPrompt('Compare current vegetable prices')">Compare Produce</button>
         <button class="ai-chip" onclick="sendQuickPrompt('How does community group buying work?')">Group Buying</button>
         <button class="ai-chip" onclick="sendQuickPrompt('What is the status of my order?')">My Orders</button>
       </div>
@@ -297,20 +478,22 @@ function initAIAssistant() {
     const query = inputEl.value.trim();
     if (!query) return;
     inputEl.value = '';
-    await handleAssistantQuery(query);
+    await handleAssistantQuery(query, 'aiMessageStream');
   });
 }
 
 window.sendQuickPrompt = function(promptText) {
-  const inputEl = document.getElementById('aiInput');
-  if (inputEl) {
+  const inputEl = document.getElementById('aiInput') || document.getElementById('dedicatedAiInput');
+  const formEl = document.getElementById('aiChatForm') || document.getElementById('dedicatedAiForm');
+  if (inputEl && formEl) {
     inputEl.value = promptText;
-    document.getElementById('aiChatForm').dispatchEvent(new Event('submit'));
+    formEl.dispatchEvent(new Event('submit'));
   }
 };
 
-async function handleAssistantQuery(query) {
-  const stream = document.getElementById('aiMessageStream');
+async function handleAssistantQuery(query, streamElementId = 'aiMessageStream') {
+  const stream = document.getElementById(streamElementId);
+  if (!stream) return;
   const token = localStorage.getItem('token');
 
   // Add user bubble
@@ -322,7 +505,7 @@ async function handleAssistantQuery(query) {
   // Add loading bubble
   const loadingBubble = document.createElement('div');
   loadingBubble.className = 'ai-bubble assistant loading';
-  loadingBubble.innerHTML = '<span class="ai-typing"><span></span><span></span><span></span></span> Consulting live marketplace...';
+  loadingBubble.innerHTML = '<span class="pulse-dot"></span> Consulting live marketplace...';
   stream.appendChild(loadingBubble);
   stream.scrollTop = stream.scrollHeight;
 
@@ -341,7 +524,6 @@ async function handleAssistantQuery(query) {
 
     const assistantBubble = document.createElement('div');
     assistantBubble.className = 'ai-bubble assistant';
-    // Format bold and bullet points cleanly
     const formattedReply = (data.reply || 'No response available.')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/• /g, '<br>• ');
@@ -352,7 +534,7 @@ async function handleAssistantQuery(query) {
     loadingBubble.remove();
     const errorBubble = document.createElement('div');
     errorBubble.className = 'ai-bubble assistant';
-    errorBubble.textContent = 'Could not connect to the assistant server. Please check your network connection and try again.';
+    errorBubble.textContent = 'Could not connect to the assistant server. Please check your connection and try again.';
     stream.appendChild(errorBubble);
   }
 

@@ -1,4 +1,7 @@
-// Farmer Dashboard Controller
+// ============================================================================
+// FARM DIRECT — FARMER DASHBOARD CONTROLLER
+// ============================================================================
+
 const API_URL = window.API_URL || API_BASE_URL;
 const token = localStorage.getItem('token');
 const user = JSON.parse(localStorage.getItem('user'));
@@ -7,71 +10,98 @@ if (!token || !user || user.role !== 'farmer') {
   window.location.href = 'login.html';
 }
 
-document.getElementById('farmerName').textContent = user.name;
-
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  localStorage.clear();
-  window.location.href = 'login.html';
-});
-
-// Initialize UI widgets
-initNotificationSystem(token);
-initAIAssistant();
-
+// Global Farmer State
 const LOW_STOCK_THRESHOLD = 5;
 let farmerCropsMap = {};
 let allFarmerOrders = [];
 let activeOrderFilter = 'all';
 let currentAddImage = null;
 let editImageState = { changed: false, value: null };
+let currentActiveView = 'overviewView';
+
+// Initialize Shell, Notification System, and AI Assistant
+initDashboardShell(user, 'navOverview');
+initNotificationSystem(token);
+initAIAssistant();
+
+// Update Welcome Farmer Name
+const welcomeNameEl = document.getElementById('welcomeFarmerName');
+if (welcomeNameEl) welcomeNameEl.textContent = user.name;
+
+// Global Logout Handler
+window.handleLogout = function() {
+  if (confirm('Are you sure you want to log out of Farm Direct?')) {
+    localStorage.clear();
+    window.location.href = 'login.html';
+  }
+};
+
+// Global View Switcher
+window.showSection = function(viewId, title, navId) {
+  currentActiveView = viewId;
+  switchDashboardView(viewId, title, navId);
+
+  if (viewId === 'overviewView') {
+    loadStats();
+    loadOverviewPreview();
+  } else if (viewId === 'cropsView') {
+    loadCrops();
+  } else if (viewId === 'ordersView') {
+    loadOrders();
+  } else if (viewId === 'bidsView') {
+    loadFarmerBids();
+  } else if (viewId === 'groupBuyView') {
+    loadFarmerGroupBuys();
+  } else if (viewId === 'messagesView') {
+    loadFarmerMessagesView();
+  } else if (viewId === 'notificationsView') {
+    loadDedicatedNotifications();
+  } else if (viewId === 'analyticsView') {
+    loadAnalytics();
+  } else if (viewId === 'traceabilityView') {
+    loadTraceabilityCrops();
+  } else if (viewId === 'profileView') {
+    loadFarmerProfile();
+  } else if (viewId === 'settingsView') {
+    loadFarmerSettings();
+  }
+};
 
 // ============================================================================
-// TAB NAVIGATION
+// BREADCRUMB & HEADER QUICK SEARCH
 // ============================================================================
-const tabButtons = document.querySelectorAll('.dashboard-tabs .tab-btn');
-const tabPanes = document.querySelectorAll('.tab-pane');
-
-tabButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    tabButtons.forEach(b => b.classList.remove('active'));
-    tabPanes.forEach(p => {
-      p.classList.remove('active');
-      p.style.display = 'none';
-    });
-
-    btn.classList.add('active');
-    const targetPane = document.getElementById(btn.dataset.tab);
-    if (targetPane) {
-      targetPane.classList.add('active');
-      targetPane.style.display = 'block';
+const headerSearch = document.getElementById('farmerQuickSearch');
+if (headerSearch) {
+  headerSearch.addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    if (currentActiveView === 'cropsView' || currentActiveView === 'overviewView') {
+      filterCropsByQuery(q);
+    } else if (currentActiveView === 'ordersView') {
+      filterOrdersByQuery(q);
     }
-
-    if (btn.dataset.tab === 'bidsTab') loadFarmerBids();
-    if (btn.dataset.tab === 'groupBuyTab') loadFarmerGroupBuys();
-    if (btn.dataset.tab === 'ordersTab') loadOrders();
-  });
-});
-
-// Bidding checkbox toggle in Add Crop form
-const biddingEnabledCheckbox = document.getElementById('biddingEnabled');
-const minPriceRow = document.getElementById('minPriceRow');
-if (biddingEnabledCheckbox && minPriceRow) {
-  biddingEnabledCheckbox.addEventListener('change', () => {
-    minPriceRow.style.display = biddingEnabledCheckbox.checked ? 'block' : 'none';
   });
 }
 
-// Bidding checkbox toggle in Edit Crop form
-const editBiddingEnabledCheckbox = document.getElementById('editBiddingEnabled');
-const editMinPriceRow = document.getElementById('editMinPriceRow');
-if (editBiddingEnabledCheckbox && editMinPriceRow) {
-  editBiddingEnabledCheckbox.addEventListener('change', () => {
-    editMinPriceRow.style.display = editBiddingEnabledCheckbox.checked ? 'block' : 'none';
+function filterCropsByQuery(query) {
+  Object.values(farmerCropsMap).forEach(crop => {
+    const card = document.getElementById(`cropCard-${crop.id}`);
+    if (card) {
+      const match = crop.crop_name.toLowerCase().includes(query) || (crop.category || '').toLowerCase().includes(query);
+      card.style.display = match ? 'flex' : 'none';
+    }
+  });
+}
+
+function filterOrdersByQuery(query) {
+  const cards = document.querySelectorAll('#orderList .crop-card, #orderList table tr');
+  cards.forEach(el => {
+    const text = el.textContent.toLowerCase();
+    el.style.display = text.includes(query) ? '' : 'none';
   });
 }
 
 // ============================================================================
-// STATS SUMMARY
+// STATS SUMMARY (OVERVIEW & ANALYTICS)
 // ============================================================================
 async function loadStats() {
   try {
@@ -82,31 +112,151 @@ async function loadStats() {
     const cropStats = await cropStatsRes.json();
     const orderStats = await orderStatsRes.json();
 
-    document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card">
-        <div class="stat-value">${cropStats.totalCrops || 0}</div>
-        <div class="stat-label">Crops Listed</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${orderStats.totalOrders || 0}</div>
-        <div class="stat-label">Total Orders (${orderStats.pendingOrders || 0} pending)</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${orderStats.totalKgSold || 0} kg</div>
-        <div class="stat-label">Volume Sold</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">₹${Number(orderStats.revenue || 0).toFixed(0)}</div>
-        <div class="stat-label">Delivered Revenue</div>
-      </div>
-    `;
+    const statsGrid = document.getElementById('statsGrid');
+    if (statsGrid) {
+      statsGrid.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-icon-wrap green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">${cropStats.totalCrops || 0}</div>
+            <div class="stat-label">Active Crop Listings</div>
+            <div class="stat-subtext">Live on marketplace</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">${orderStats.totalOrders || 0}</div>
+            <div class="stat-label">Total Purchase Orders</div>
+            <div class="stat-subtext" style="color:var(--accent); font-weight:600;">${orderStats.pendingOrders || 0} pending fulfillment</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap amber">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">${orderStats.totalKgSold || 0} kg</div>
+            <div class="stat-label">Total Volume Sold</div>
+            <div class="stat-subtext">Dispatched to buyers</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap purple">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">₹${Number(orderStats.revenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+            <div class="stat-label">Delivered Revenue</div>
+            <div class="stat-subtext">Completed trade value</div>
+          </div>
+        </div>
+      `;
+    }
   } catch (err) {
     console.error('loadStats error:', err);
   }
 }
 
 // ============================================================================
-// CROP LISTINGS MANAGEMENT & IMAGE UPLOAD
+// OVERVIEW PREVIEWS (RECENT ORDERS & STOCK INVENTORY)
+// ============================================================================
+async function loadOverviewPreview() {
+  try {
+    const [ordersRes, cropsRes] = await Promise.all([
+      fetch(`${API_URL}/orders/farmer/${user.id}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+      fetch(`${API_URL}/crops/farmer/${user.id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+    ]);
+    const orders = await ordersRes.json();
+    const crops = await cropsRes.json();
+
+    // 1. Orders preview
+    const ordersBox = document.getElementById('overviewOrdersPreview');
+    if (ordersBox) {
+      if (!orders || orders.length === 0) {
+        ordersBox.innerHTML = '<div class="empty-state">No buyer orders received yet. Keep listing fresh produce!</div>';
+      } else {
+        const recentOrders = orders.slice(0, 5);
+        ordersBox.innerHTML = `
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Crop</th>
+                  <th>Buyer</th>
+                  <th>Quantity</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${recentOrders.map(o => `
+                  <tr>
+                    <td><strong>#${o.id}</strong></td>
+                    <td><strong>${escapeHtml(o.crop_name)}</strong></td>
+                    <td>${escapeHtml(o.buyer_name)} <small style="color:var(--ink-soft)">(${escapeHtml(o.buyer_location || 'India')})</small></td>
+                    <td>${escapeHtml(o.quantity)} kg</td>
+                    <td><strong>₹${Number(o.total_price).toFixed(2)}</strong></td>
+                    <td><span class="status-tag status-${escapeHtml(o.status)}">${escapeHtml(o.status)}</span></td>
+                    <td>
+                      <button class="btn-secondary btn-small" onclick="showSection('ordersView', 'Orders', 'navOrders')">Manage</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+    }
+
+    // 2. Stock preview
+    const stockBox = document.getElementById('overviewStockPreview');
+    if (stockBox) {
+      if (!crops || crops.length === 0) {
+        stockBox.innerHTML = '<div class="empty-state">No crops currently in inventory. Add your first harvest!</div>';
+      } else {
+        stockBox.innerHTML = `
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
+            ${crops.slice(0, 4).map(c => {
+              const isLow = Number(c.quantity_available) < LOW_STOCK_THRESHOLD;
+              return `
+                <div style="background:var(--bg-app); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong>${escapeHtml(c.crop_name)}</strong>
+                    <span class="category-badge">${escapeHtml(c.category || 'Other')}</span>
+                  </div>
+                  <div style="font-size:18px; font-weight:700; color:var(--primary); margin: 6px 0;">₹${c.price_per_kg}/kg</div>
+                  <div class="stock-bar-track">
+                    <div class="stock-bar-fill ${isLow ? 'low' : ''}" style="width:${stockPercent(c.quantity_available)}%"></div>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft);">
+                    <span>${c.quantity_available} kg available</span>
+                    ${isLow ? '<span style="color:var(--danger); font-weight:700;">Low Stock</span>' : '<span style="color:var(--secondary); font-weight:600;">In Stock</span>'}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+    }
+  } catch (err) {
+    console.error('loadOverviewPreview error:', err);
+  }
+}
+
+// ============================================================================
+// CROPS LISTING & MANAGEMENT
 // ============================================================================
 const cropImageInput = document.getElementById('cropImageInput');
 const cropImagePreview = document.getElementById('cropImagePreview');
@@ -145,7 +295,7 @@ if (removeCropImageBtn) {
   });
 }
 
-// Edit Crop Image Controls
+// Edit Crop Photo Controls
 const editCropImageInput = document.getElementById('editCropImageInput');
 const editCropImagePreview = document.getElementById('editCropImagePreview');
 const editCropPreviewImg = document.getElementById('editCropPreviewImg');
@@ -183,6 +333,24 @@ if (removeEditCropImageBtn) {
   });
 }
 
+// Bidding toggle in Add Crop form
+const biddingEnabledCheckbox = document.getElementById('biddingEnabled');
+const minPriceRow = document.getElementById('minPriceRow');
+if (biddingEnabledCheckbox && minPriceRow) {
+  biddingEnabledCheckbox.addEventListener('change', () => {
+    minPriceRow.style.display = biddingEnabledCheckbox.checked ? 'block' : 'none';
+  });
+}
+
+// Bidding toggle in Edit Crop form
+const editBiddingEnabledCheckbox = document.getElementById('editBiddingEnabled');
+const editMinPriceRow = document.getElementById('editMinPriceRow');
+if (editBiddingEnabledCheckbox && editMinPriceRow) {
+  editBiddingEnabledCheckbox.addEventListener('change', () => {
+    editMinPriceRow.style.display = editBiddingEnabledCheckbox.checked ? 'block' : 'none';
+  });
+}
+
 async function loadCrops() {
   try {
     const res = await fetch(`${API_URL}/crops/farmer/${user.id}`, {
@@ -195,7 +363,14 @@ async function loadCrops() {
     farmerCropsMap = {};
 
     if (!crops || crops.length === 0) {
-      cropList.innerHTML = '<div class="empty-state">No crops listed yet. Add your first harvest listing above!</div>';
+      cropList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🌾</div>
+          <h3>No crops listed yet</h3>
+          <p>Add your first fresh harvest listing to start receiving buyer purchase orders.</p>
+          <button class="btn-primary" onclick="showSection('addCropView', 'Add New Crop', 'navAddCrop')">+ Add First Harvest</button>
+        </div>
+      `;
       return;
     }
 
@@ -206,14 +381,17 @@ async function loadCrops() {
 
       const imageHtml = hasImage
         ? `<img src="${crop.image}" alt="${escapeHtml(crop.crop_name)}" class="crop-card-img" loading="lazy">`
-        : `<div class="crop-card-img placeholder"><span class="placeholder-icon">🌱</span><span>No photo</span></div>`;
+        : `<div class="crop-card-img placeholder">
+             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/></svg>
+             <span>Fresh Harvest</span>
+           </div>`;
 
       const harvestHtml = crop.harvest_date
-        ? `<div class="crop-harvest-date">Harvested: ${formatDate(crop.harvest_date)}</div>`
+        ? `<div class="crop-harvest-date">📅 Harvested: ${formatDate(crop.harvest_date)}</div>`
         : '';
 
       const biddingBadge = crop.bidding_enabled
-        ? `<span class="badge-negotiable" title="Minimum reserve: ₹${crop.min_bidding_price || crop.price_per_kg}">🤝 Bidding Active</span>`
+        ? `<div class="badge-negotiable">🤝 Price Negotiation Enabled</div>`
         : '';
 
       cropList.innerHTML += `
@@ -223,14 +401,29 @@ async function loadCrops() {
             <strong>${escapeHtml(crop.crop_name)}</strong>
             <span class="category-badge">${escapeHtml(crop.category || 'Other')}</span>
           </div>
-          ${lowStock ? '<span class="badge-low">Low stock</span>' : ''}
+          
+          <div class="crop-meta-row">
+            <span class="crop-price-highlight">₹${escapeHtml(crop.price_per_kg)}</span>
+            <span class="crop-unit-text">/ kg</span>
+            ${lowStock ? '<span class="badge-low">Low stock</span>' : ''}
+          </div>
+
           ${biddingBadge}
-          <div class="crop-meta">₹${escapeHtml(crop.price_per_kg)}/kg</div>
           ${harvestHtml}
-          <div class="stock-bar-track"><div class="stock-bar-fill" style="width:${stockPercent(crop.quantity_available)}%"></div></div>
-          <p style="margin:0">${escapeHtml(crop.quantity_available)} kg in stock${crop.description ? ' · ' + escapeHtml(crop.description) : ''}</p>
+
+          <div class="stock-bar-track">
+            <div class="stock-bar-fill ${lowStock ? 'low' : ''}" style="width:${stockPercent(crop.quantity_available)}%"></div>
+          </div>
+          
+          <div style="display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">
+            <span>${escapeHtml(crop.quantity_available)} kg available</span>
+            <span>Origin: Verified</span>
+          </div>
+
+          <p style="margin:0 0 14px; font-size:13px; line-height:1.4;">${crop.description ? escapeHtml(crop.description) : 'Direct farm harvest.'}</p>
+
           <div class="crop-actions">
-            <button onclick="openEditModalById(${crop.id})">Edit</button>
+            <button class="btn-secondary" onclick="openEditModalById(${crop.id})">Edit</button>
             <button class="btn-secondary" onclick="openQrModal(${crop.id})">QR Code</button>
             <button class="danger" onclick="deleteCrop(${crop.id})">Delete</button>
           </div>
@@ -240,6 +433,32 @@ async function loadCrops() {
   } catch (err) {
     console.error('loadCrops error:', err);
   }
+}
+
+// Farmer Crop Category Filters
+const farmerCatChips = document.querySelectorAll('#farmerCategoryChips .category-chip');
+farmerCatChips.forEach(chip => {
+  chip.addEventListener('click', () => {
+    farmerCatChips.forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    const cat = chip.dataset.cat;
+    Object.values(farmerCropsMap).forEach(crop => {
+      const card = document.getElementById(`cropCard-${crop.id}`);
+      if (card) {
+        const matches = (cat === 'All') || (crop.category || '').toLowerCase() === cat.toLowerCase();
+        card.style.display = matches ? 'flex' : 'none';
+      }
+    });
+  });
+});
+
+// Search filter for farmer's own crops
+const farmerSearchBox = document.getElementById('farmerSearchBox');
+if (farmerSearchBox) {
+  farmerSearchBox.addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    filterCropsByQuery(q);
+  });
 }
 
 // Add Crop Form Submit
@@ -280,7 +499,7 @@ document.getElementById('cropForm').addEventListener('submit', async (e) => {
       if (cropPreviewImg) cropPreviewImg.src = '';
       if (cropImagePreview) cropImagePreview.style.display = 'none';
       if (minPriceRow) minPriceRow.style.display = 'none';
-      loadCrops();
+      showSection('cropsView', 'My Crops', 'navCrops');
       loadStats();
     } else {
       showToast(data.error || 'Failed to add crop', 'error');
@@ -293,7 +512,7 @@ document.getElementById('cropForm').addEventListener('submit', async (e) => {
 });
 
 // Edit Crop Modal
-function openEditModalById(cropId) {
+window.openEditModalById = function(cropId) {
   const crop = farmerCropsMap[cropId];
   if (!crop) return;
 
@@ -325,11 +544,11 @@ function openEditModalById(cropId) {
   editCropImageInput.value = '';
 
   document.getElementById('editModal').style.display = 'flex';
-}
+};
 
-function closeEditModal() {
+window.closeEditModal = function() {
   document.getElementById('editModal').style.display = 'none';
-}
+};
 
 document.getElementById('editCropForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -382,7 +601,7 @@ document.getElementById('editCropForm').addEventListener('submit', async (e) => 
   }
 });
 
-async function deleteCrop(id) {
+window.deleteCrop = async function(id) {
   if (!confirm('Are you sure you want to delete this crop listing? This action cannot be undone.')) return;
   try {
     const res = await fetch(`${API_URL}/crops/${id}`, {
@@ -391,7 +610,7 @@ async function deleteCrop(id) {
     });
     const data = await res.json();
     if (res.ok) {
-      showToast('Crop deleted', 'success');
+      showToast('Crop listing removed', 'success');
       loadCrops();
       loadStats();
     } else {
@@ -400,27 +619,12 @@ async function deleteCrop(id) {
   } catch (err) {
     showToast('Could not connect to server', 'error');
   }
-}
-
-// Search filter for farmer's own crops
-const farmerSearchBox = document.getElementById('farmerSearchBox');
-if (farmerSearchBox) {
-  farmerSearchBox.addEventListener('input', (e) => {
-    const q = e.target.value.toLowerCase().trim();
-    Object.values(farmerCropsMap).forEach(crop => {
-      const card = document.getElementById(`cropCard-${crop.id}`);
-      if (card) {
-        const matches = crop.crop_name.toLowerCase().includes(q) || (crop.category || '').toLowerCase().includes(q);
-        card.style.display = matches ? 'flex' : 'none';
-      }
-    });
-  });
-}
+};
 
 // ============================================================================
-// QR CODE TRACEABILITY MODAL
+// QR CODE TRACEABILITY MODAL & VIEW
 // ============================================================================
-async function openQrModal(cropId) {
+window.openQrModal = async function(cropId) {
   const modal = document.getElementById('qrModal');
   const modalImg = document.getElementById('qrModalImg');
   const codeEl = document.getElementById('qrModalCode');
@@ -450,16 +654,50 @@ async function openQrModal(cropId) {
   } catch (err) {
     codeEl.textContent = 'Network error generating QR';
   }
-}
+};
 
-function closeQrModal() {
+window.closeQrModal = function() {
   document.getElementById('qrModal').style.display = 'none';
+};
+
+async function loadTraceabilityCrops() {
+  const container = document.getElementById('farmerTraceabilityList');
+  if (!container) return;
+
+  try {
+    const res = await fetch(`${API_URL}/crops/farmer/${user.id}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const crops = await res.json();
+
+    if (!crops || crops.length === 0) {
+      container.innerHTML = '<div class="empty-state">No crops listed to generate traceability records for.</div>';
+      return;
+    }
+
+    container.innerHTML = crops.map(c => `
+      <div class="crop-card">
+        <div class="crop-header-row">
+          <strong>${escapeHtml(c.crop_name)}</strong>
+          <span class="category-badge">${escapeHtml(c.category || 'Other')}</span>
+        </div>
+        <div style="font-size:12.5px; color:var(--ink-soft); margin: 6px 0;">
+          Code: <span style="font-family:monospace; font-weight:700; color:var(--primary);">${c.traceability_code || 'Pending'}</span>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:14px;">
+          <button class="btn-primary btn-small" onclick="openQrModal(${c.id})">🔍 Inspect & Print QR</button>
+          ${c.traceability_code ? `<a href="traceability.html?code=${c.traceability_code}" target="_blank" class="btn-secondary btn-small">Public Page</a>` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    container.innerHTML = '<div class="empty-state">Failed to load traceability items.</div>';
+  }
 }
 
 // ============================================================================
 // ORDERS & FULFILLMENT
 // ============================================================================
-// Filter pills
 const filterPills = document.querySelectorAll('#orderFilterPills .pill');
 filterPills.forEach(pill => {
   pill.addEventListener('click', () => {
@@ -491,29 +729,47 @@ function renderFilteredOrders() {
   );
 
   if (filtered.length === 0) {
-    orderList.innerHTML = '<div class="empty-state">No orders matching this filter.</div>';
+    orderList.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📦</div>
+        <h3>No orders matching "${activeOrderFilter}"</h3>
+        <p>Buyer orders will appear here as purchases are finalized.</p>
+      </div>
+    `;
     return;
   }
 
   filtered.forEach(order => {
     orderList.innerHTML += `
-      <div class="crop-card">
+      <div class="crop-card" style="margin-bottom:16px;">
         <div class="crop-header-row">
-          <strong>${escapeHtml(order.crop_name)}</strong>
+          <div>
+            <strong>${escapeHtml(order.crop_name)}</strong>
+            <span style="font-size:12px; color:var(--ink-muted); margin-left:8px;">Order #${order.id}</span>
+          </div>
           <span class="status-tag status-${escapeHtml(order.status)}">${escapeHtml(order.status)}</span>
         </div>
-        <div class="crop-meta">${escapeHtml(order.quantity)} kg · Total: ₹${escapeHtml(order.total_price)}</div>
-        <div class="crop-meta" style="margin-top: -6px;">Buyer: ${escapeHtml(order.buyer_name)} (${escapeHtml(order.buyer_location || 'India')})</div>
+        
+        <div class="crop-meta-row" style="margin: 4px 0 8px;">
+          <span style="font-size:14.5px; font-weight:600; color:var(--ink);">Quantity: ${escapeHtml(order.quantity)} kg</span>
+          <span style="color:var(--border);">·</span>
+          <span style="font-size:16px; font-weight:800; color:var(--primary);">Total: ₹${Number(order.total_price).toFixed(2)}</span>
+        </div>
 
-        <!-- Order Fulfillment Status Control -->
-        <div style="margin: 10px 0;">
-          <label style="font-size: 12px; font-weight:600; color:var(--ink-soft); display:block; margin-bottom:4px;">Update Fulfillment:</label>
+        <div class="crop-farmer-meta">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          Buyer: <strong>${escapeHtml(order.buyer_name)}</strong> (${escapeHtml(order.buyer_location || 'India')})
+        </div>
+
+        <!-- Fulfillment Status Update Selector -->
+        <div style="background:var(--bg-app); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; margin: 10px 0;">
+          <label style="font-size: 11.5px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:4px; text-transform:uppercase;">Update Dispatch / Fulfillment:</label>
           <select onchange="updateStatus(${order.id}, this.value)" ${['delivered', 'cancelled', 'rejected'].includes(order.status) ? 'disabled' : ''}>
-            <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
-            <option value="accepted" ${order.status === 'accepted' ? 'selected' : ''}>Accepted</option>
-            <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Processing</option>
+            <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending Review</option>
+            <option value="accepted" ${order.status === 'accepted' ? 'selected' : ''}>Accept Order</option>
+            <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Processing / Packing</option>
             <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>Shipped / In Transit</option>
-            <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+            <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered & Closed</option>
             <option value="rejected" ${order.status === 'rejected' ? 'selected' : ''}>Reject Order</option>
           </select>
         </div>
@@ -523,7 +779,7 @@ function renderFilteredOrders() {
           <button class="toggle-messages btn-small" onclick="toggleMessages(${order.id}, ${order.buyer_id})">💬 Message Buyer</button>
         </div>
 
-        <div id="thread-${order.id}" style="display:none; margin-top: 12px;">
+        <div id="thread-${order.id}" style="display:none; margin-top: 14px;">
           <div class="message-thread" id="messages-${order.id}"></div>
           <div class="message-row">
             <input type="text" id="msgInput-${order.id}" placeholder="Type a message to buyer..." onkeypress="if(event.key === 'Enter') sendMessage(${order.id}, ${order.buyer_id})">
@@ -535,7 +791,7 @@ function renderFilteredOrders() {
   });
 }
 
-async function updateStatus(orderId, status) {
+window.updateStatus = async function(orderId, status) {
   try {
     const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
       method: 'PUT',
@@ -554,10 +810,10 @@ async function updateStatus(orderId, status) {
   } catch (err) {
     showToast('Could not connect to server', 'error');
   }
-}
+};
 
 // Order Timeline
-async function openOrderTimeline(orderId) {
+window.openOrderTimeline = async function(orderId) {
   const modal = document.getElementById('orderTimelineModal');
   const infoEl = document.getElementById('timelineOrderInfo');
   const stepperEl = document.getElementById('timelineStepper');
@@ -580,7 +836,7 @@ async function openOrderTimeline(orderId) {
         return;
       }
 
-      stepperEl.innerHTML = data.timeline.map((step, idx) => `
+      stepperEl.innerHTML = data.timeline.map(step => `
         <div class="timeline-step">
           <div class="timeline-dot"></div>
           <div class="timeline-content">
@@ -594,16 +850,16 @@ async function openOrderTimeline(orderId) {
   } catch (err) {
     infoEl.textContent = 'Failed to load order history.';
   }
-}
+};
 
-function closeTimelineModal() {
+window.closeTimelineModal = function() {
   document.getElementById('orderTimelineModal').style.display = 'none';
-}
+};
 
 // Messaging
 let chatIntervals = {};
 
-async function toggleMessages(orderId) {
+window.toggleMessages = async function(orderId) {
   const thread = document.getElementById(`thread-${orderId}`);
   const isHidden = thread.style.display === 'none';
   thread.style.display = isHidden ? 'block' : 'none';
@@ -614,7 +870,7 @@ async function toggleMessages(orderId) {
     clearInterval(chatIntervals[orderId]);
     delete chatIntervals[orderId];
   }
-}
+};
 
 async function loadMessages(orderId) {
   const res = await fetch(`${API_URL}/messages/order/${orderId}`, {
@@ -638,7 +894,7 @@ async function loadMessages(orderId) {
   box.scrollTop = box.scrollHeight;
 }
 
-async function sendMessage(orderId, receiverId) {
+window.sendMessage = async function(orderId, receiverId) {
   const input = document.getElementById(`msgInput-${orderId}`);
   const message_text = input.value.trim();
   if (!message_text) return;
@@ -658,6 +914,26 @@ async function sendMessage(orderId, receiverId) {
   } catch (err) {
     showToast('Could not connect to server', 'error');
   }
+};
+
+function loadFarmerMessagesView() {
+  const container = document.getElementById('activeThreadsList');
+  if (!container) return;
+
+  if (allFarmerOrders.length === 0) {
+    container.innerHTML = '<div class="empty-state">No orders available to open chats for. Once you receive orders, conversations will show here.</div>';
+    return;
+  }
+
+  container.innerHTML = allFarmerOrders.map(o => `
+    <div style="background:var(--bg-app); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <strong>Order #${o.id} — ${escapeHtml(o.crop_name)}</strong>
+        <div style="font-size:12.5px; color:var(--ink-soft);">Buyer: ${escapeHtml(o.buyer_name)} (${escapeHtml(o.buyer_location || 'India')})</div>
+      </div>
+      <button class="btn-primary btn-small" onclick="showSection('ordersView', 'Orders', 'navOrders'); toggleMessages(${o.id}, ${o.buyer_id});">Open Chat</button>
+    </div>
+  `).join('');
 }
 
 // ============================================================================
@@ -678,7 +954,13 @@ async function loadFarmerBids() {
     if (badge) badge.textContent = pendingCount;
 
     if (!bids || bids.length === 0) {
-      container.innerHTML = '<div class="empty-state">No price negotiations received yet. Make sure "Enable Buyer Price Negotiation" is checked on your crop listings!</div>';
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🤝</div>
+          <h3>No price negotiations received yet</h3>
+          <p>Make sure "Enable Buyer Price Negotiation" is checked on your crop listings!</p>
+        </div>
+      `;
       return;
     }
 
@@ -692,9 +974,9 @@ async function loadFarmerBids() {
             <strong>${escapeHtml(bid.crop_name)}</strong>
             <span class="status-tag status-${bid.status === 'converted_to_order' ? 'accepted' : escapeHtml(bid.status)}">${escapeHtml(bid.status)}</span>
           </div>
-          <div class="crop-meta">Buyer: <strong>${escapeHtml(bid.buyer_name)}</strong> (${escapeHtml(bid.buyer_location || 'India')})</div>
-          <div class="crop-meta" style="margin-top:-6px;">
-            Proposed Rate: <strong>₹${bid.offered_price_per_kg}/kg</strong> for <strong>${bid.quantity} kg</strong> (Total: ₹${totalOffer})
+          <div class="crop-meta" style="margin-top:2px;">Buyer: <strong>${escapeHtml(bid.buyer_name)}</strong> (${escapeHtml(bid.buyer_location || 'India')})</div>
+          <div class="crop-meta" style="margin-top:-4px;">
+            Proposed Rate: <strong style="color:var(--primary); font-size:16px;">₹${bid.offered_price_per_kg}/kg</strong> for <strong>${bid.quantity} kg</strong> (Total: ₹${totalOffer})
             <br><small style="color:var(--ink-soft)">Your original listing price: ₹${bid.original_price}/kg · Current stock: ${bid.stock_left} kg</small>
           </div>
 
@@ -717,7 +999,7 @@ async function loadFarmerBids() {
   }
 }
 
-async function acceptBid(bidId, cropName) {
+window.acceptBid = async function(bidId, cropName) {
   if (!confirm(`Accept this negotiated offer for ${cropName}? This will lock the crop inventory and instantly create a confirmed order.`)) return;
 
   try {
@@ -737,9 +1019,9 @@ async function acceptBid(bidId, cropName) {
   } catch (err) {
     showToast('Could not connect to server', 'error');
   }
-}
+};
 
-async function rejectBid(bidId) {
+window.rejectBid = async function(bidId) {
   if (!confirm('Reject this price offer?')) return;
   try {
     const res = await fetch(`${API_URL}/bids/${bidId}/reject`, {
@@ -755,19 +1037,19 @@ async function rejectBid(bidId) {
   } catch (err) {
     showToast('Could not connect to server', 'error');
   }
-}
+};
 
-function openCounterModal(bidId, cropName, currentOffer, qty) {
+window.openCounterModal = function(bidId, cropName, currentOffer, qty) {
   document.getElementById('counterBidId').value = bidId;
   document.getElementById('counterModalInfo').innerHTML = `Responding to offer for <strong>${cropName}</strong> (Buyer offered ₹${currentOffer}/kg for ${qty} kg)`;
   document.getElementById('counterPrice').value = '';
   document.getElementById('counterNote').value = '';
   document.getElementById('counterModal').style.display = 'flex';
-}
+};
 
-function closeCounterModal() {
+window.closeCounterModal = function() {
   document.getElementById('counterModal').style.display = 'none';
-}
+};
 
 document.getElementById('counterOfferForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -801,7 +1083,7 @@ const openCreateGroupBuyBtn = document.getElementById('openCreateGroupBuyBtn');
 if (openCreateGroupBuyBtn) {
   openCreateGroupBuyBtn.addEventListener('click', () => {
     const select = document.getElementById('gbCropSelect');
-    select.innerHTML = '<option value="" disabled selected>Select an eligible crop listing</option>';
+    select.innerHTML = '<option value="" disabled selected>Select an eligible harvest listing</option>';
     Object.values(farmerCropsMap).forEach(crop => {
       select.innerHTML += `<option value="${crop.id}">${escapeHtml(crop.crop_name)} (${crop.quantity_available} kg in stock - Base ₹${crop.price_per_kg}/kg)</option>`;
     });
@@ -809,9 +1091,9 @@ if (openCreateGroupBuyBtn) {
   });
 }
 
-function closeCreateGroupBuyModal() {
+window.closeCreateGroupBuyModal = function() {
   document.getElementById('createGroupBuyModal').style.display = 'none';
-}
+};
 
 document.getElementById('createGroupBuyForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -851,7 +1133,13 @@ async function loadFarmerGroupBuys() {
     const campaigns = await res.json();
 
     if (!campaigns || campaigns.length === 0) {
-      container.innerHTML = '<div class="empty-state">No group buying campaigns created yet. Click "+ Launch New Campaign" above to offer bulk co-op discounts!</div>';
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">👥</div>
+          <h3>No group buying campaigns yet</h3>
+          <p>Launch co-op campaigns to attract bulk buyer orders and clear harvest volume quickly.</p>
+        </div>
+      `;
       return;
     }
 
@@ -863,15 +1151,15 @@ async function loadFarmerGroupBuys() {
             <strong>${escapeHtml(gb.title)}</strong>
             <span class="status-tag status-${escapeHtml(gb.status)}">${escapeHtml(gb.status)}</span>
           </div>
-          <div class="crop-meta">Crop: <strong>${escapeHtml(gb.crop_name)}</strong> · Discount Rate: <strong>₹${gb.discount_price_per_kg}/kg</strong> (Original: ₹${gb.original_price}/kg)</div>
+          <div class="crop-meta">Produce: <strong>${escapeHtml(gb.crop_name)}</strong> · Wholesale Rate: <strong>₹${gb.discount_price_per_kg}/kg</strong> (Standard: ₹${gb.original_price}/kg)</div>
           <div class="crop-meta" style="margin-top:-6px;">Cutoff Date: ${formatDate(gb.end_date)} · Participants: ${gb.participant_count || 0} buyers</div>
 
           <div style="margin: 12px 0 6px;">
-            <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600; margin-bottom:4px;">
+            <div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; margin-bottom:4px;">
               <span>Volume Target Progress</span>
               <span>${gb.committed_quantity} / ${gb.target_quantity} kg (${pct}%)</span>
             </div>
-            <div class="stock-bar-track"><div class="stock-bar-fill" style="width:${pct}%; background:var(--leaf);"></div></div>
+            <div class="stock-bar-track"><div class="stock-bar-fill" style="width:${pct}%;"></div></div>
           </div>
         </div>
       `;
@@ -881,7 +1169,123 @@ async function loadFarmerGroupBuys() {
   }
 }
 
-// Initial Boot
+// ============================================================================
+// DEDICATED NOTIFICATIONS VIEW
+// ============================================================================
+async function loadDedicatedNotifications() {
+  const container = document.getElementById('dedicatedNotifList');
+  if (!container) return;
+
+  try {
+    const res = await fetch(`${API_URL}/notifications`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const notifications = await res.json();
+
+    if (!notifications || notifications.length === 0) {
+      container.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+      return;
+    }
+
+    container.innerHTML = notifications.map(n => `
+      <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markNotifRead(${n.id}, '${escapeHtml(n.link || '')}', '${token}')">
+        <div class="notif-item-header">
+          <span class="notif-type-tag notif-type-${escapeHtml(n.type)}">${escapeHtml(n.type)}</span>
+          <span class="notif-time">${formatDate(n.created_at)}</span>
+        </div>
+        <div class="notif-item-title">${escapeHtml(n.title)}</div>
+        <div class="notif-item-msg">${escapeHtml(n.message)}</div>
+      </div>
+    `).join('');
+  } catch (err) {
+    container.innerHTML = '<div class="notif-empty">Could not load notifications.</div>';
+  }
+}
+
+// ============================================================================
+// SALES ANALYTICS VIEW
+// ============================================================================
+async function loadAnalytics() {
+  const analyticsGrid = document.getElementById('analyticsStatsGrid');
+  const breakdownEl = document.getElementById('analyticsFulfillmentBreakdown');
+  if (!analyticsGrid) return;
+
+  try {
+    const res = await fetch(`${API_URL}/orders/stats/farmer/${user.id}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const stats = await res.json();
+
+    analyticsGrid.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-value">₹${Number(stats.revenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+          <div class="stat-label">Delivered Revenue</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-value">${stats.totalKgSold || 0} kg</div>
+          <div class="stat-label">Produce Dispatched</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-value">${stats.totalOrders || 0}</div>
+          <div class="stat-label">Total Transactions</div>
+        </div>
+      </div>
+    `;
+
+    if (breakdownEl) {
+      breakdownEl.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:4px;">
+              <span>Pending Orders</span>
+              <span>${stats.pendingOrders || 0}</span>
+            </div>
+            <div class="stock-bar-track"><div class="stock-bar-fill" style="width:${Math.min(100, (stats.pendingOrders || 0) * 20)}%; background:var(--accent);"></div></div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:4px;">
+              <span>Delivered & Completed</span>
+              <span>${stats.deliveredOrders || 0}</span>
+            </div>
+            <div class="stock-bar-track"><div class="stock-bar-fill" style="width:${Math.min(100, (stats.deliveredOrders || 0) * 20)}%; background:var(--secondary);"></div></div>
+          </div>
+        </div>
+      `;
+    }
+  } catch (err) {
+    console.error('loadAnalytics error:', err);
+  }
+}
+
+// ============================================================================
+// PROFILE & SETTINGS
+// ============================================================================
+function loadFarmerProfile() {
+  const profileName = document.getElementById('profileFarmerName');
+  const profileEmail = document.getElementById('profileEmail');
+  const profileLocation = document.getElementById('profileLocation');
+  const profileAvatar = document.getElementById('profileLargeAvatar');
+
+  if (profileName) profileName.textContent = user.name;
+  if (profileEmail) profileEmail.textContent = user.email || 'farmer@farmdirect.in';
+  if (profileLocation) profileLocation.textContent = user.location || 'Maharashtra, India';
+  if (profileAvatar) profileAvatar.textContent = getInitials(user.name);
+}
+
+function loadFarmerSettings() {
+  const settingsApiUrl = document.getElementById('settingsApiUrl');
+  if (settingsApiUrl) {
+    settingsApiUrl.textContent = window.IS_LOCAL ? 'Localhost (Development)' : 'Render Production Cloud API';
+  }
+}
+
+// Initial Boot: Load Stats, Overview Preview, and Crops
 loadStats();
+loadOverviewPreview();
 loadCrops();
 loadOrders();

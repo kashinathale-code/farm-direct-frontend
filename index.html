@@ -4,13 +4,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Farm Direct - Digital Marketplace for Direct-to-Consumer Crop Sales</title>
+  <title>Farm Direct — A Digital Platform for Direct-to-Consumer Crop Sales</title>
   <meta name="description"
-    content="Farm Direct connects farmers directly to buyers, ensuring fair crop prices by cutting out unnecessary intermediaries.">
+    content="Farm Direct connects farmers directly to consumers and wholesale buyers. 0% middlemen commission, verified QR crop traceability, and transparent pricing.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link
-    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -18,12 +15,24 @@
   <!-- Navigation -->
   <nav class="landing-nav">
     <div class="nav-container">
-      <a href="index.html" class="logo">Farm Direct</a>
+      <a href="index.html" class="brand-link">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/>
+            <path d="M7 13c3 0 7-2 9-8-2 6-4 9-9 9z"/>
+            <path d="M12 22V12"/>
+          </svg>
+        </div>
+        <div class="brand-meta">
+          <span class="brand-title">Farm Direct</span>
+          <span class="brand-tagline">Fair Agricultural Trade</span>
+        </div>
+      </a>
       <div class="nav-links">
         <a href="#marketplace" class="nav-link">Marketplace</a>
         <a href="#how-it-works" class="nav-link">How it Works</a>
         <a href="#features" class="nav-link">Features</a>
-        <a href="login.html" class="nav-link">Login</a>
+        <a href="login.html" class="nav-link" style="font-weight:600;">Log In</a>
         <a href="register.html" class="nav-button">Get Started</a>
       </div>
     </div>
@@ -33,22 +42,24 @@
     <!-- Hero Section -->
     <section class="hero-section">
       <div class="hero-content">
-        <div class="hero-tag"><span class="pulse-indicator"></span> Direct-to-Consumer Agriculture</div>
+        <div class="hero-tag">
+          <span class="pulse-dot"></span>
+          Direct-to-Consumer Agriculture
+        </div>
         <h1>Fresh from the farm, directly to your doorstep.</h1>
         <p class="hero-subtitle">
-          We connect local farmers directly with consumers and wholesale buyers. 
-          Zero middlemen commissions, 100% price transparency, and fresh, traceable produce.
+          We connect local agricultural growers directly with consumers, restaurants, and wholesale buyers. Zero intermediary commissions, 100% price transparency, and verified harvest origin.
         </p>
 
         <!-- Live Quick Search Bar -->
         <div class="hero-search-box">
-          <input type="text" id="landingSearchInput" placeholder="Search crops (e.g. Tomatoes, Basmati Rice, Mangoes)...">
-          <button id="landingSearchBtn" class="btn-primary">Browse Crops</button>
+          <input type="text" id="landingSearchInput" placeholder="Search fresh crops (e.g. Alphonso Mangoes, Tomatoes, Basmati Rice)..." autocomplete="off">
+          <button id="landingSearchBtn" class="btn-primary">Browse Produce</button>
         </div>
 
         <div class="hero-actions">
           <a href="register.html" class="btn-primary">Start Selling as Farmer</a>
-          <a href="login.html" class="btn-secondary">Buy Fresh Crops</a>
+          <a href="login.html" class="btn-secondary">Buy Fresh Harvest</a>
         </div>
 
         <div class="hero-highlights">
@@ -57,12 +68,12 @@
             <span>Direct Fair Trade</span>
           </div>
           <div class="highlight-item">
-            <strong>QR Traceable</strong>
-            <span>Verified Harvest Origin</span>
+            <strong>QR Verified</strong>
+            <span>Tamper-Resistant Origin</span>
           </div>
           <div class="highlight-item">
-            <strong>Live Bidding</strong>
-            <span>B2B Price Negotiation</span>
+            <strong>Live Negotiations</strong>
+            <span>Direct Buyer-Grower Bids</span>
           </div>
         </div>
       </div>
@@ -70,11 +81,11 @@
       <div class="hero-image">
         <div class="hero-card">
           <div class="hero-card-header">
-            <span class="pulse-indicator"></span> Live Transparency Index
+            <span class="pulse-dot"></span> Live Transparency Metric
           </div>
           <div class="hero-card-stat">
             <span class="stat-number">+35%</span>
-            <span class="stat-label">Higher Farmer Earnings</span>
+            <span class="stat-label">Higher Farmer Realized Income</span>
           </div>
           <div class="hero-card-badge">Middlemen Fee Eliminated</div>
         </div>
@@ -85,47 +96,47 @@
     <section id="how-it-works" class="how-it-works-section">
       <div class="section-container">
         <div class="section-header">
-          <span class="section-badge">Simple & Transparent</span>
+          <span class="section-badge">Transparent Ecosystem</span>
           <h2>How Farm Direct Works</h2>
-          <p>Cutting out multi-tiered brokers to return full market value to growers.</p>
+          <p>Eliminating multi-tiered brokers to return full market value to hardworking growers.</p>
         </div>
 
         <div class="steps-grid">
           <div class="step-card">
             <div class="step-num">01</div>
-            <h3>Farmer Lists Harvest</h3>
-            <p>Farmers list fresh crops with high-res photos, harvest dates, quantities, and per-kg rates. They can optionally enable live price negotiation or bulk group-buying.</p>
+            <h3>Farmer Publishes Harvest</h3>
+            <p>Farmers list produce with authentic photos, harvest dates, quantities, and per-kg rates. They can optionally enable live price negotiation or bulk group-buying campaigns.</p>
           </div>
           <div class="step-card">
             <div class="step-num">02</div>
             <h3>Buyer Discovers & Connects</h3>
-            <p>Buyers browse verified crop listings, scan QR codes for harvest traceability, and place orders directly or submit negotiation counteroffers.</p>
+            <p>Buyers explore verified crop listings, scan QR codes for tamper-resistant traceability certificates, and place direct orders or negotiate custom bulk counteroffers.</p>
           </div>
           <div class="step-card">
             <div class="step-num">03</div>
-            <h3>Direct Delivery & Fulfillment</h3>
-            <p>Orders are confirmed with live timeline tracking. Real-time buyer-farmer messaging ensures total transparency from field to fork.</p>
+            <h3>Direct Fulfillment & Tracking</h3>
+            <p>Orders are confirmed with live timeline tracking. Real-time buyer-farmer direct messaging ensures complete transparency from field to fork.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Live Marketplace Produce Highlights (Loaded from real API) -->
+    <!-- Live Marketplace Produce Highlights (Loaded dynamically from API) -->
     <section id="marketplace" class="marketplace-preview-section">
       <div class="section-container">
         <div class="section-header">
-          <span class="section-badge">Live Market</span>
+          <span class="section-badge">Live Produce Catalog</span>
           <h2>Featured Crop Listings</h2>
-          <p>Real-time produce available directly from verified farmers across the country.</p>
+          <p>Real-time produce available directly from verified farmers across regions.</p>
         </div>
 
         <div id="landingCropGrid" class="landing-crops-grid">
           <!-- Populated dynamically from /api/crops -->
-          <div class="crop-loading-placeholder">Loading real marketplace listings...</div>
+          <div class="notif-empty" style="grid-column: 1 / -1;">Connecting to live agricultural registry...</div>
         </div>
 
         <div class="marketplace-cta">
-          <a href="register.html" class="btn-primary">View All Listings & Place Orders</a>
+          <a href="register.html" class="btn-primary">View All Listings & Place Orders →</a>
         </div>
       </div>
     </section>
@@ -134,28 +145,28 @@
     <section id="features" class="features-section">
       <div class="section-container">
         <div class="section-header">
-          <span class="section-badge">Next-Gen Marketplace</span>
+          <span class="section-badge">Technology for Agriculture</span>
           <h2>Engineered for Agricultural Fairness</h2>
-          <p>Modern e-commerce tools built specifically for agricultural produce.</p>
+          <p>Modern e-commerce tools built specifically to protect and empower crop growers.</p>
         </div>
 
         <div class="feature-grid">
           <div class="feature-card">
             <div class="feature-icon">🤝</div>
-            <h3>Real-Time Bidding & Offers</h3>
-            <p>Farmers set optional reserve prices while buyers can negotiate bulk rates with validated counteroffers and automatic order conversion.</p>
+            <h3>Real-Time B2B Price Negotiation</h3>
+            <p>Farmers set optional reserve prices while buyers can negotiate bulk rates with validated counteroffers and automatic order conversion upon mutual agreement.</p>
           </div>
 
           <div class="feature-card">
-            <div class="feature-icon">📦</div>
+            <div class="feature-icon">👥</div>
             <h3>Community Group Buying</h3>
-            <p>Buyers pool orders together to hit quantity targets and unlock wholesale discounts, bringing co-op purchasing power to everyone.</p>
+            <p>Buyers pool orders together to hit quantity targets and unlock wholesale discounts, bringing co-op purchasing power to everyday consumers.</p>
           </div>
 
           <div class="feature-card">
-            <div class="feature-icon">🔍</div>
+            <div class="feature-icon">🛡️</div>
             <h3>QR Crop Traceability</h3>
-            <p>Every listing generates a scannable QR code linking to a tamper-resistant public traceability certificate showing farm origin and harvest date.</p>
+            <p>Every harvest produces a scannable QR code linking to a tamper-resistant public traceability certificate validating farm origin and harvest freshness.</p>
           </div>
 
           <div class="feature-card">
@@ -166,14 +177,14 @@
 
           <div class="feature-card">
             <div class="feature-icon">📊</div>
-            <h3>Farmer Analytics & Stock Control</h3>
-            <p>Farmers track revenue, order fulfillment stages, incoming negotiations, and automated low-stock warnings.</p>
+            <h3>Farmer Sales Analytics</h3>
+            <p>Growers track delivered revenue, order fulfillment stages, incoming buyer proposals, and automated low-stock warnings.</p>
           </div>
 
           <div class="feature-card">
             <div class="feature-icon">🔔</div>
             <h3>Persistent Notifications</h3>
-            <p>Never miss a buyer offer, order status change, or message with real-time updates and unread alerts.</p>
+            <p>Never miss a purchase order, status update, counteroffer, or message with real-time in-app notification indicators.</p>
           </div>
         </div>
       </div>
@@ -184,19 +195,21 @@
       <div class="section-container">
         <div class="transparency-card">
           <div class="transparency-content">
-            <h2>The Direct-to-Consumer Difference</h2>
-            <p>Traditional agricultural supply chains pass produce through 4–6 intermediaries (village agents, commission brokers, wholesale APMC mandis, secondary distributors, retail shops), each extracting a margin while adding transit delay.</p>
+            <h2>The Direct-to-Consumer Advantage</h2>
+            <p>Traditional agricultural supply chains pass produce through 4–6 intermediaries (village agents, commission brokers, wholesale APMC mandis, secondary distributors, retail shops), each extracting margins while adding transit delays.</p>
             <div class="comparison-bars">
               <div class="comp-bar-item">
-                <div class="comp-label"><span>Traditional Mandi System: Farmer gets</span> <strong>35% - 45%</strong></div>
+                <div class="comp-label"><span>Traditional Mandi System: Grower gets</span> <strong>35% – 45%</strong></div>
                 <div class="bar-track"><div class="bar-fill traditional" style="width: 40%"></div></div>
               </div>
               <div class="comp-bar-item">
-                <div class="comp-label"><span>Farm Direct Platform: Farmer gets</span> <strong>95% - 100%</strong></div>
+                <div class="comp-label"><span>Farm Direct Platform: Grower gets</span> <strong>95% – 100%</strong></div>
                 <div class="bar-track"><div class="bar-fill direct" style="width: 98%"></div></div>
               </div>
             </div>
-            <a href="register.html" class="btn-primary" style="margin-top: 24px;">Join the Movement</a>
+            <div style="margin-top: 24px;">
+              <a href="register.html" class="btn-primary" style="width:auto; padding:12px 28px;">Join the Direct Agriculture Movement</a>
+            </div>
           </div>
         </div>
       </div>
@@ -208,37 +221,36 @@
     <div class="footer-container">
       <div class="footer-col">
         <div class="logo">Farm Direct</div>
-        <p>A Digital Platform for Direct-to-Consumer Crop Sales. Built as a College Engineering Minor Project to empower Indian farmers.</p>
+        <p>A Digital Platform for Direct-to-Consumer Crop Sales. Built as a College Engineering Minor Project to empower farmers with fair market access.</p>
       </div>
       <div class="footer-col">
-        <strong>Quick Links</strong>
-        <a href="#marketplace">Marketplace</a>
+        <strong>Marketplace</strong>
+        <a href="#marketplace">Browse Produce</a>
         <a href="#how-it-works">How It Works</a>
-        <a href="#features">Features</a>
-        <a href="login.html">Login</a>
-        <a href="register.html">Register</a>
+        <a href="#features">Platform Features</a>
+        <a href="login.html">Buyer Sign In</a>
       </div>
       <div class="footer-col">
-        <strong>Farmer Tools</strong>
-        <a href="register.html">List Crops</a>
+        <strong>Farmer Console</strong>
+        <a href="register.html">List Your Harvest</a>
         <a href="login.html">Farmer Dashboard</a>
-        <a href="login.html">Group Buying Manager</a>
+        <a href="login.html">Co-Op Group Buying</a>
       </div>
       <div class="footer-col">
-        <strong>Project Information</strong>
+        <strong>Project Specs</strong>
         <p>BTech Computer Science & Engineering Minor Project.</p>
-        <p>Frontend: Netlify · Backend: Render · Database: TiDB Cloud.</p>
+        <p>Frontend: Netlify · Backend: Render Cloud · Database: TiDB MySQL.</p>
       </div>
     </div>
     <div class="footer-bottom">
-      © 2026 Farm Direct. Free Open Agriculture Initiative.
+      © 2026 Farm Direct — Open Agriculture Platform.
     </div>
   </footer>
 
   <script src="config.js"></script>
   <script src="ui.js"></script>
   <script>
-    // Initialize AI Assistant for visitors
+    // Initialize AI Assistant widget for visitors
     initAIAssistant();
 
     // Fetch and display real live crop listings from API
@@ -250,7 +262,7 @@
         const crops = await res.json();
 
         if (!crops || crops.length === 0) {
-          grid.innerHTML = '<div class="crop-loading-placeholder">Marketplace is active. Farmers will be listing new harvests soon!</div>';
+          grid.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">Marketplace is live. Local farmers will be publishing new harvests soon!</div>';
           return;
         }
 
@@ -260,7 +272,7 @@
           const hasImage = crop.image && crop.image.startsWith('data:image/jpeg;base64,');
           const imageHtml = hasImage
             ? `<img src="${crop.image}" alt="${escapeHtml(crop.crop_name)}" class="crop-card-img" loading="lazy">`
-            : `<div class="crop-card-img placeholder"><span class="placeholder-icon">🌱</span><span>Fresh produce</span></div>`;
+            : `<div class="crop-card-img placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/></svg><span>Fresh Produce</span></div>`;
 
           return `
             <div class="crop-card">
@@ -269,18 +281,24 @@
                 <strong>${escapeHtml(crop.crop_name)}</strong>
                 <span class="category-badge">${escapeHtml(crop.category || 'Other')}</span>
               </div>
-              <div class="crop-meta">₹${escapeHtml(crop.price_per_kg)}/kg · Farmer: ${escapeHtml(crop.farmer_name)} (${escapeHtml(crop.location || 'India')})</div>
-              ${crop.harvest_date ? `<div class="crop-harvest-date">Harvested: ${formatDate(crop.harvest_date)}</div>` : ''}
-              <p style="margin: 6px 0 16px; font-size: 14px;">${crop.description ? escapeHtml(crop.description.slice(0, 80)) + (crop.description.length > 80 ? '...' : '') : 'Direct from farm harvest.'}</p>
-              <div class="landing-card-actions">
-                <a href="login.html" class="btn-primary btn-small">Order Now</a>
-                ${crop.traceability_code ? `<a href="traceability.html?code=${crop.traceability_code}" class="btn-secondary btn-small">Verify QR Origin</a>` : ''}
+              <div class="crop-meta-row">
+                <span class="crop-price-highlight">₹${escapeHtml(crop.price_per_kg)}</span>
+                <span class="crop-unit-text">/ kg</span>
+              </div>
+              <div class="crop-farmer-meta">
+                Farmer: <strong>${escapeHtml(crop.farmer_name)}</strong> (${escapeHtml(crop.location || 'India')})
+              </div>
+              ${crop.harvest_date ? `<div class="crop-harvest-date">📅 Harvested: ${formatDate(crop.harvest_date)}</div>` : ''}
+              <p style="margin: 6px 0 14px; font-size: 13px; line-height: 1.4;">${crop.description ? escapeHtml(crop.description.slice(0, 80)) + (crop.description.length > 80 ? '...' : '') : 'Direct from farm harvest.'}</p>
+              <div style="display:flex; gap:8px; margin-top:auto;">
+                <a href="login.html" class="btn-primary btn-small" style="flex:1;">Order Now</a>
+                ${crop.traceability_code ? `<a href="traceability.html?code=${crop.traceability_code}" class="btn-secondary btn-small" style="flex:1;">Verify QR</a>` : ''}
               </div>
             </div>
           `;
         }).join('');
       } catch (err) {
-        grid.innerHTML = '<div class="crop-loading-placeholder">Could not load live crops right now. Please explore dashboard listings.</div>';
+        grid.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">Connecting to marketplace... Log in to view all direct farm listings.</div>';
       }
     }
 
@@ -290,13 +308,14 @@
     const searchInput = document.getElementById('landingSearchInput');
     const searchBtn = document.getElementById('landingSearchBtn');
     function triggerLandingSearch() {
-      const q = searchInput.value.trim();
       window.location.href = `login.html`;
     }
-    searchBtn.addEventListener('click', triggerLandingSearch);
-    searchInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') triggerLandingSearch();
-    });
+    if (searchBtn) searchBtn.addEventListener('click', triggerLandingSearch);
+    if (searchInput) {
+      searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') triggerLandingSearch();
+      });
+    }
   </script>
 </body>
 

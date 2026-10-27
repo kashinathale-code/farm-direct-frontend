@@ -3,133 +3,730 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Farmer Dashboard - Farm Direct</title>
+  <title>Farmer Dashboard — Farm Direct</title>
+  <meta name="description" content="Manage your crop listings, incoming buyer orders, real-time price negotiations, and farm analytics.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="app-body">
-  <!-- Navigation -->
-  <nav class="app-nav">
-    <div class="nav-container">
-      <div class="logo">Farm Direct</div>
-      <div class="user-menu">
-        <span class="user-greeting">Welcome, <span id="farmerName"></span></span>
-        <span class="role-badge">Farmer</span>
-        <button id="logoutBtn" class="secondary btn-small">Logout</button>
+<body class="dashboard-body">
+  <div class="dashboard-layout">
+    
+    <!-- Mobile Drawer Backdrop -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- Fixed Left Sidebar -->
+    <aside class="app-sidebar" id="appSidebar">
+      <!-- Sidebar Brand Header -->
+      <div class="sidebar-header">
+        <a href="farmer-dashboard.html" class="brand-link">
+          <div class="brand-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/>
+              <path d="M7 13c3 0 7-2 9-8-2 6-4 9-9 9z"/>
+              <path d="M12 22V12"/>
+            </svg>
+          </div>
+          <div class="brand-meta">
+            <span class="brand-title">Farm Direct</span>
+            <span class="brand-tagline">Farmer Console</span>
+          </div>
+        </a>
+        <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Collapse / Expand Sidebar" aria-label="Toggle sidebar width">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
       </div>
-    </div>
-  </nav>
 
-  <main class="dashboard-main">
-    <div class="dashboard-content">
+      <!-- Sidebar Navigation Groups -->
+      <nav class="sidebar-nav">
+        <!-- MAIN SECTION -->
+        <div class="nav-group">
+          <span class="nav-group-label">Main</span>
+          
+          <button class="nav-item active" id="navOverview" data-tooltip="Overview" onclick="showSection('overviewView', 'Overview', 'navOverview')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </span>
+            <span class="nav-item-label">Overview</span>
+          </button>
 
-      <!-- Dynamic Statistics Summary Grid -->
-      <div class="stats-grid" id="statsGrid"></div>
+          <button class="nav-item" id="navCrops" data-tooltip="My Crops" onclick="showSection('cropsView', 'My Crops', 'navCrops')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </span>
+            <span class="nav-item-label">My Crops</span>
+          </button>
 
-      <!-- Navigation Tabs for Farmer Tools -->
-      <div class="dashboard-tabs">
-        <button class="tab-btn active" data-tab="listingsTab">🌾 Crop Listings</button>
-        <button class="tab-btn" data-tab="ordersTab">📦 Orders & Fulfillment</button>
-        <button class="tab-btn" data-tab="bidsTab">🤝 Price Negotiations (<span id="bidCountBadge">0</span>)</button>
-        <button class="tab-btn" data-tab="groupBuyTab">👥 Group Buying Campaigns</button>
-      </div>
+          <button class="nav-item" id="navAddCrop" data-tooltip="Add New Crop" onclick="showSection('addCropView', 'Add New Crop', 'navAddCrop')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+              </svg>
+            </span>
+            <span class="nav-item-label">Add New Crop</span>
+          </button>
 
-      <!-- TAB 1: CROP LISTINGS -->
-      <div id="listingsTab" class="tab-pane active">
-        <div class="section-title-row">
-          <h3>Add New Harvest Listing</h3>
+          <button class="nav-item" id="navOrders" data-tooltip="Orders" onclick="showSection('ordersView', 'Orders & Fulfillment', 'navOrders')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </span>
+            <span class="nav-item-label">Orders</span>
+          </button>
+
+          <button class="nav-item" id="navBids" data-tooltip="Bids & Negotiations" onclick="showSection('bidsView', 'Bids & Negotiations', 'navBids')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+            </span>
+            <span class="nav-item-label">Bids & Negotiations</span>
+            <span class="nav-item-badge" id="bidCountBadge">0</span>
+          </button>
+
+          <button class="nav-item" id="navGroupBuy" data-tooltip="Group Buying" onclick="showSection('groupBuyView', 'Group Buying Campaigns', 'navGroupBuy')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </span>
+            <span class="nav-item-label">Group Buying</span>
+          </button>
         </div>
 
-        <form id="cropForm">
-          <input type="text" id="cropName" placeholder="Crop name (e.g. Alphonso Mango, Tomato)" required>
-          <select id="cropCategory" required>
-            <option value="" disabled selected>Select category</option>
-            <option value="Vegetables">Vegetables</option>
-            <option value="Fruits">Fruits</option>
-            <option value="Grains">Grains</option>
-            <option value="Pulses">Pulses</option>
-            <option value="Spices">Spices</option>
-            <option value="Other">Other</option>
-          </select>
-          <input type="number" id="price" placeholder="Price per kg (₹)" min="1" step="0.5" required>
-          <input type="number" id="quantity" placeholder="Quantity available (kg)" min="1" required>
+        <!-- COMMUNICATION SECTION -->
+        <div class="nav-group">
+          <span class="nav-group-label">Communication</span>
 
-          <div class="form-field-full">
-            <label class="field-label" for="harvestDate">Harvest Date</label>
-            <input type="date" id="harvestDate">
-          </div>
+          <button class="nav-item" id="navMessages" data-tooltip="Messages" onclick="showSection('messagesView', 'Buyer Messages', 'navMessages')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </span>
+            <span class="nav-item-label">Messages</span>
+          </button>
 
-          <!-- Negotiation / Bidding Settings -->
-          <div class="form-field-full form-checkbox-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="biddingEnabled">
-              <span><strong>Enable Buyer Price Negotiation</strong> (Allow buyers to submit counteroffers)</span>
-            </label>
-          </div>
-          <div class="form-field-full" id="minPriceRow" style="display:none;">
-            <label class="field-label" for="minBiddingPrice">Private Minimum Acceptable Price (₹/kg) <small style="color:var(--ink-soft); font-weight:normal;">(Kept secret from buyers)</small></label>
-            <input type="number" id="minBiddingPrice" placeholder="e.g. ₹35 (optional reserve price)" min="1" step="0.5">
-          </div>
+          <button class="nav-item" id="navNotifications" data-tooltip="Notifications" onclick="showSection('notificationsView', 'Notifications', 'navNotifications')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </span>
+            <span class="nav-item-label">Notifications</span>
+          </button>
+        </div>
 
-          <div class="form-field-full">
-            <label class="field-label" for="cropImageInput">Crop Photo</label>
-            <input type="file" id="cropImageInput" accept="image/*">
-            <div id="cropImagePreview" class="image-preview-box" style="display: none;">
-              <img id="cropPreviewImg" src="" alt="Crop preview">
-              <button type="button" class="secondary btn-small" id="removeCropImageBtn">Remove photo</button>
+        <!-- INSIGHTS SECTION -->
+        <div class="nav-group">
+          <span class="nav-group-label">Insights</span>
+
+          <button class="nav-item" id="navAnalytics" data-tooltip="Sales Analytics" onclick="showSection('analyticsView', 'Sales Analytics', 'navAnalytics')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+            </span>
+            <span class="nav-item-label">Sales Analytics</span>
+          </button>
+
+          <button class="nav-item" id="navTraceability" data-tooltip="Crop Traceability" onclick="showSection('traceabilityView', 'Crop Traceability & QR', 'navTraceability')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </span>
+            <span class="nav-item-label">Crop Traceability</span>
+          </button>
+        </div>
+
+        <!-- ACCOUNT SECTION -->
+        <div class="nav-group">
+          <span class="nav-group-label">Account</span>
+
+          <button class="nav-item" id="navProfile" data-tooltip="My Profile" onclick="showSection('profileView', 'Farmer Profile', 'navProfile')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </span>
+            <span class="nav-item-label">My Profile</span>
+          </button>
+
+          <button class="nav-item" id="navSettings" data-tooltip="Settings" onclick="showSection('settingsView', 'Settings & Preferences', 'navSettings')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </span>
+            <span class="nav-item-label">Settings</span>
+          </button>
+
+          <button class="nav-item" id="navLogout" data-tooltip="Logout" onclick="handleLogout()">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </span>
+            <span class="nav-item-label" style="color:var(--danger)">Logout</span>
+          </button>
+        </div>
+      </nav>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <div class="sidebar-user" onclick="showSection('profileView', 'Farmer Profile', 'navProfile')" style="cursor:pointer;">
+          <div class="user-avatar farmer" id="sidebarUserAvatar">FD</div>
+          <div class="sidebar-user-details">
+            <span class="sidebar-user-name" id="sidebarUserName">Farmer</span>
+            <span class="sidebar-user-role" id="sidebarUserRole">Farmer</span>
+          </div>
+        </div>
+        <button class="sidebar-logout-btn" id="sidebarLogoutBtn" title="Logout" aria-label="Sign Out" onclick="handleLogout()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Wrapper Area -->
+    <div class="main-wrapper">
+      
+      <!-- Professional Top Header -->
+      <header class="top-header" id="topHeader">
+        <div class="header-left">
+          <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open Navigation Drawer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          
+          <div class="header-breadcrumbs">
+            <span class="breadcrumb-root">Farmer Dashboard</span>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current" id="headerPageTitle">Overview</span>
+          </div>
+        </div>
+
+        <div class="header-center">
+          <div class="header-search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="farmerQuickSearch" placeholder="Filter crops or orders..." autocomplete="off">
+          </div>
+        </div>
+
+        <div class="header-right">
+          <!-- Notification Bell -->
+          <div class="notif-container" id="notificationContainer">
+            <button id="notifBellBtn" class="notif-bell-btn" title="Notifications" aria-label="Notifications">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span id="notifBadge" class="notif-badge" style="display:none">0</span>
+            </button>
+            <div id="notifDropdown" class="notif-dropdown">
+              <div class="notif-header">
+                <div>
+                  <strong>Notifications</strong>
+                  <span id="notifUnreadPill" style="font-size:11px; margin-left:6px; color:var(--ink-muted);">0 new</span>
+                </div>
+                <button id="notifMarkAllReadBtn" class="notif-mark-read">Mark all as read</button>
+              </div>
+              <div id="notifList" class="notif-list">
+                <div class="notif-empty">Loading notifications...</div>
+              </div>
             </div>
           </div>
 
-          <textarea id="description" placeholder="Description & farming details (e.g. Organic, pesticide-free, freshly harvested)..."></textarea>
-          <button type="submit">Publish Listing</button>
-        </form>
+          <!-- User Profile Dropdown -->
+          <div class="user-menu-wrap" id="userMenuWrap">
+            <button class="user-profile-trigger" id="userProfileBtn" aria-expanded="false" aria-label="User Account Menu">
+              <div class="user-avatar farmer" id="headerUserAvatar">FD</div>
+              <div class="user-meta-preview">
+                <span class="user-preview-name" id="farmerName">Farmer</span>
+                <span class="user-preview-role">Farmer</span>
+              </div>
+              <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
 
-        <div class="section-title-row" style="margin-top: 36px;">
-          <h3>My Active Crop Listings</h3>
-          <input type="text" id="farmerSearchBox" placeholder="Filter my listings..." style="max-width: 250px; margin: 0;">
-        </div>
-        <div id="cropList"></div>
-      </div>
-
-      <!-- TAB 2: ORDERS & FULFILLMENT -->
-      <div id="ordersTab" class="tab-pane" style="display:none;">
-        <div class="section-title-row">
-          <h3>Incoming Buyer Orders</h3>
-          <div class="filter-pills" id="orderFilterPills">
-            <button class="pill active" data-filter="all">All</button>
-            <button class="pill" data-filter="pending">Pending</button>
-            <button class="pill" data-filter="accepted">Accepted</button>
-            <button class="pill" data-filter="processing">Processing</button>
-            <button class="pill" data-filter="delivered">Delivered</button>
+            <div class="user-dropdown-menu" id="userProfileDropdown">
+              <div class="user-dropdown-header">
+                <strong id="dropdownFullName">Farmer Name</strong>
+                <span class="email" id="dropdownEmail">farmer@farmdirect.in</span>
+                <span class="status-tag status-active" style="margin-top:4px;" id="dropdownRoleBadge">FARMER</span>
+              </div>
+              <div class="user-dropdown-divider"></div>
+              <button class="user-dropdown-item" onclick="showSection('profileView', 'Farmer Profile', 'navProfile')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                My Profile
+              </button>
+              <button class="user-dropdown-item" onclick="showSection('settingsView', 'Settings', 'navSettings')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                Settings
+              </button>
+              <div class="user-dropdown-divider"></div>
+              <button class="user-dropdown-item logout" onclick="handleLogout()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Log Out
+              </button>
+            </div>
           </div>
         </div>
-        <div id="orderList"></div>
-      </div>
+      </header>
 
-      <!-- TAB 3: PRICE NEGOTIATIONS -->
-      <div id="bidsTab" class="tab-pane" style="display:none;">
-        <div class="section-title-row">
-          <h3>Incoming Price Negotiations & Offers</h3>
-          <p style="margin: 0; font-size: 14px; color: var(--ink-soft);">Review custom price proposals from buyers. Accepting an offer locks stock and generates an order instantly.</p>
-        </div>
-        <div id="farmerBidList"></div>
-      </div>
+      <!-- Main Page Container with Views -->
+      <main class="page-container">
 
-      <!-- TAB 4: GROUP BUYING CAMPAIGNS -->
-      <div id="groupBuyTab" class="tab-pane" style="display:none;">
-        <div class="section-title-row">
-          <h3>Community Group Buying Campaigns</h3>
-          <button id="openCreateGroupBuyBtn" class="btn-primary btn-small">+ Launch New Campaign</button>
-        </div>
-        <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 20px;">
-          Group buying allows multiple buyers to combine orders towards a bulk volume target at a wholesale rate.
-        </p>
-        <div id="farmerGroupBuyList"></div>
-      </div>
+        <!-- ================================================================
+             VIEW 1: OVERVIEW DASHBOARD
+             ================================================================ -->
+        <section id="overviewView" class="page-view active">
+          <!-- Personalized Greeting Section -->
+          <div class="welcome-hero">
+            <div class="welcome-content">
+              <span class="welcome-badge">🌱 Producer Portal</span>
+              <h1>Welcome back, <span id="welcomeFarmerName">Farmer</span>!</h1>
+              <p>Manage your crop listings, orders, and direct sales from one centralized dashboard.</p>
+            </div>
+            <div class="welcome-action">
+              <button class="btn-primary" onclick="showSection('addCropView', 'Add New Crop', 'navAddCrop')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                + Add New Crop Listing
+              </button>
+            </div>
+          </div>
 
+          <!-- Real Statistics Summary Grid -->
+          <div class="stats-grid" id="statsGrid">
+            <!-- Dynamically populated from API -->
+          </div>
+
+          <!-- Quick Actions Grid -->
+          <div class="quick-actions-grid">
+            <a class="quick-action-card" onclick="showSection('addCropView', 'Add New Crop', 'navAddCrop')">
+              <div class="quick-action-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+              </div>
+              <span class="quick-action-label">Add Harvest Listing</span>
+            </a>
+            <a class="quick-action-card" onclick="showSection('ordersView', 'Orders', 'navOrders')">
+              <div class="quick-action-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+              </div>
+              <span class="quick-action-label">Review Orders</span>
+            </a>
+            <a class="quick-action-card" onclick="showSection('bidsView', 'Bids & Negotiations', 'navBids')">
+              <div class="quick-action-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+              </div>
+              <span class="quick-action-label">Check Price Offers</span>
+            </a>
+            <a class="quick-action-card" onclick="showSection('groupBuyView', 'Group Buying', 'navGroupBuy')">
+              <div class="quick-action-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path></svg>
+              </div>
+              <span class="quick-action-label">Launch Group Buy</span>
+            </a>
+          </div>
+
+          <!-- Recent Incoming Orders Preview Table -->
+          <div class="card-box">
+            <div class="section-title-row">
+              <div>
+                <h2>Recent Incoming Orders</h2>
+                <p>Latest purchases placed by buyers directly for your harvest.</p>
+              </div>
+              <button class="btn-secondary btn-small" onclick="showSection('ordersView', 'Orders', 'navOrders')">View All Orders →</button>
+            </div>
+            <div id="overviewOrdersPreview">
+              <!-- Rendered via loadOverviewPreview() -->
+            </div>
+          </div>
+
+          <!-- Active Stock Summary Preview -->
+          <div class="card-box">
+            <div class="section-title-row">
+              <div>
+                <h2>Produce Inventory & Stock Health</h2>
+                <p>Active listings currently available to wholesale and retail buyers.</p>
+              </div>
+              <button class="btn-secondary btn-small" onclick="showSection('cropsView', 'My Crops', 'navCrops')">Manage All Produce →</button>
+            </div>
+            <div id="overviewStockPreview">
+              <!-- Rendered via loadOverviewPreview() -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 2: MY CROPS
+             ================================================================ -->
+        <section id="cropsView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>My Crop Listings</h2>
+              <p>Manage all your listed produce, track remaining stock, update prices, and generate QR traceability.</p>
+            </div>
+            <button class="btn-primary btn-small" onclick="showSection('addCropView', 'Add New Crop', 'navAddCrop')">+ Add New Crop</button>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
+            <input type="text" id="farmerSearchBox" placeholder="Filter crops by name or category..." style="max-width: 320px; margin: 0;">
+            <div class="category-chips" id="farmerCategoryChips">
+              <button class="category-chip active" data-cat="All">All Categories</button>
+              <button class="category-chip" data-cat="Vegetables">Vegetables</button>
+              <button class="category-chip" data-cat="Fruits">Fruits</button>
+              <button class="category-chip" data-cat="Grains">Grains</button>
+              <button class="category-chip" data-cat="Pulses">Pulses</button>
+              <button class="category-chip" data-cat="Spices">Spices</button>
+            </div>
+          </div>
+
+          <div id="cropList">
+            <!-- Dynamically populated from API -->
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 3: ADD NEW CROP
+             ================================================================ -->
+        <section id="addCropView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>Add New Harvest Listing</h2>
+              <p>Publish fresh agricultural produce directly to the Farm Direct live marketplace.</p>
+            </div>
+          </div>
+
+          <div class="card-box" style="max-width: 780px;">
+            <form id="cropForm">
+              <div class="input-group">
+                <label class="field-label" for="cropName">Crop / Produce Name *</label>
+                <input type="text" id="cropName" placeholder="e.g. Alphonso Mangoes, Organic Tomatoes, Basmati Rice" required>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="input-group">
+                  <label class="field-label" for="cropCategory">Produce Category *</label>
+                  <select id="cropCategory" required>
+                    <option value="" disabled selected>Select category</option>
+                    <option value="Vegetables">Vegetables</option>
+                    <option value="Fruits">Fruits</option>
+                    <option value="Grains">Grains</option>
+                    <option value="Pulses">Pulses</option>
+                    <option value="Spices">Spices</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div class="input-group">
+                  <label class="field-label" for="harvestDate">Harvest Date</label>
+                  <input type="date" id="harvestDate">
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="input-group">
+                  <label class="field-label" for="price">Listing Price per kg (₹) *</label>
+                  <input type="number" id="price" placeholder="e.g. ₹45" min="1" step="0.5" required>
+                </div>
+
+                <div class="input-group">
+                  <label class="field-label" for="quantity">Available Quantity (kg) *</label>
+                  <input type="number" id="quantity" placeholder="e.g. 150 kg" min="1" required>
+                </div>
+              </div>
+
+              <!-- Buyer Negotiation / Bidding Settings -->
+              <div class="form-field-full" style="background:var(--bg-app); border:1px solid var(--border); padding:16px; border-radius:var(--radius-md);">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="biddingEnabled">
+                  <span><strong>Enable Buyer Price Negotiation</strong> (Allow buyers to submit counteroffers)</span>
+                </label>
+                <div id="minPriceRow" style="display:none; margin-top: 14px;">
+                  <label class="field-label" for="minBiddingPrice">Private Minimum Acceptable Price (₹/kg) <small style="color:var(--ink-soft); font-weight:normal;">(Kept secret from buyers — counteroffers below this require your manual confirmation)</small></label>
+                  <input type="number" id="minBiddingPrice" placeholder="e.g. ₹38" min="1" step="0.5">
+                </div>
+              </div>
+
+              <!-- Crop Photo Upload -->
+              <div class="form-field-full">
+                <label class="field-label" for="cropImageInput">Produce Photograph</label>
+                <input type="file" id="cropImageInput" accept="image/*">
+                <div id="cropImagePreview" class="image-preview-box" style="display: none;">
+                  <img id="cropPreviewImg" src="" alt="Crop preview">
+                  <div>
+                    <strong style="font-size:13px; display:block;">Photo attached</strong>
+                    <span style="font-size:12px; color:var(--ink-soft);">Compressed automatically for rapid delivery</span>
+                    <button type="button" class="secondary btn-small" id="removeCropImageBtn" style="margin-top:6px;">Remove photo</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="input-group">
+                <label class="field-label" for="description">Farming Details & Origin Notes</label>
+                <textarea id="description" placeholder="e.g. Naturally grown, pesticide-free, freshly harvested from Sangli farm..."></textarea>
+              </div>
+
+              <div style="display:flex; gap:12px; margin-top:20px;">
+                <button type="submit" class="btn-primary" style="width:auto; padding:12px 30px;">Publish Crop Listing</button>
+                <button type="button" class="btn-secondary" onclick="showSection('cropsView', 'My Crops', 'navCrops')" style="width:auto;">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 4: ORDERS & FULFILLMENT
+             ================================================================ -->
+        <section id="ordersView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>Orders & Fulfillment Management</h2>
+              <p>Track incoming buyer purchase orders, update dispatch status, and communicate directly with customers.</p>
+            </div>
+            
+            <div class="filter-pills" id="orderFilterPills">
+              <button class="pill active" data-filter="all">All Orders</button>
+              <button class="pill" data-filter="pending">Pending</button>
+              <button class="pill" data-filter="accepted">Accepted</button>
+              <button class="pill" data-filter="processing">Processing</button>
+              <button class="pill" data-filter="shipped">Shipped</button>
+              <button class="pill" data-filter="delivered">Delivered</button>
+            </div>
+          </div>
+
+          <div id="orderList">
+            <!-- Dynamically populated from API -->
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 5: BIDS & NEGOTIATIONS
+             ================================================================ -->
+        <section id="bidsView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>B2B Price Negotiations & Buyer Offers</h2>
+              <p>Review custom price proposals from buyers. Accepting an offer locks stock and generates an order instantly.</p>
+            </div>
+          </div>
+
+          <div id="farmerBidList">
+            <!-- Dynamically populated from API -->
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 6: GROUP BUYING CAMPAIGNS
+             ================================================================ -->
+        <section id="groupBuyView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>Community Group Buying Campaigns</h2>
+              <p>Group buying pools orders from multiple buyers to meet volume thresholds at wholesale rates.</p>
+            </div>
+            <button id="openCreateGroupBuyBtn" class="btn-primary btn-small">+ Launch New Campaign</button>
+          </div>
+
+          <div id="farmerGroupBuyList">
+            <!-- Dynamically populated from API -->
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 7: MESSAGES
+             ================================================================ -->
+        <section id="messagesView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>Buyer Conversations</h2>
+              <p>Direct communication with buyers regarding their active orders.</p>
+            </div>
+          </div>
+
+          <div class="card-box" id="farmerMessagesContainer">
+            <div class="notif-empty">Select an order under the "Orders" tab to chat with that buyer, or view active threads below.</div>
+            <div id="activeThreadsList"></div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 8: NOTIFICATIONS
+             ================================================================ -->
+        <section id="notificationsView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>Notification History</h2>
+              <p>Persistent record of buyer orders, negotiation moves, and fulfillment updates.</p>
+            </div>
+            <button class="btn-secondary btn-small" onclick="document.getElementById('notifMarkAllReadBtn').click()">Mark All as Read</button>
+          </div>
+
+          <div class="card-box">
+            <div id="dedicatedNotifList" class="notif-list" style="max-height: 600px;">
+              <div class="notif-empty">Loading notifications...</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 9: SALES ANALYTICS
+             ================================================================ -->
+        <section id="analyticsView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>Sales Performance & Volume Analytics</h2>
+              <p>Real-time insights derived from verified orders and completed marketplace trades.</p>
+            </div>
+          </div>
+
+          <div class="stats-grid" id="analyticsStatsGrid">
+            <!-- Filled via loadStats -->
+          </div>
+
+          <div class="card-box">
+            <h3 style="margin-top:0;">Order Fulfillment Breakdown</h3>
+            <p>Distribution of orders across all workflow states.</p>
+            <div id="analyticsFulfillmentBreakdown" style="margin-top: 16px;"></div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 10: CROP TRACEABILITY
+             ================================================================ -->
+        <section id="traceabilityView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>Digital Origin & QR Code Traceability</h2>
+              <p>Every listed harvest produces a verified cryptographic QR certificate validating origin and farmer identity.</p>
+            </div>
+          </div>
+
+          <div class="card-box">
+            <p style="margin-bottom: 20px;">
+              Share your digital certificates or print QR codes directly onto crop crates and packaging bags. Buyers scan with any camera to verify fresh harvest details.
+            </p>
+            <div id="farmerTraceabilityList" class="crops-grid">
+              <!-- Rendered via loadTraceabilityCrops() -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 11: MY PROFILE
+             ================================================================ -->
+        <section id="profileView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>Farmer Account Profile</h2>
+              <p>Your verified producer profile and public agricultural credentials.</p>
+            </div>
+          </div>
+
+          <div class="card-box" style="max-width: 640px;">
+            <div style="display:flex; align-items:center; gap:18px; margin-bottom:24px;">
+              <div class="user-avatar farmer" style="width:64px; height:64px; font-size:24px;" id="profileLargeAvatar">FD</div>
+              <div>
+                <h3 style="margin:0;" id="profileFarmerName">Farmer Name</h3>
+                <span class="status-tag status-active" style="margin-top:4px;">VERIFIED FARMER</span>
+              </div>
+            </div>
+
+            <div class="trace-grid-stats" style="margin-bottom:20px;">
+              <div class="trace-stat-box">
+                <span class="trace-stat-label">Email Address</span>
+                <strong class="trace-stat-val" id="profileEmail" style="font-size:14px;">-</strong>
+              </div>
+              <div class="trace-stat-box">
+                <span class="trace-stat-label">Farm Location</span>
+                <strong class="trace-stat-val" id="profileLocation" style="font-size:14px;">-</strong>
+              </div>
+            </div>
+
+            <div class="trace-notes-box">
+              <h3>Producer ID & Direct Sales Policy</h3>
+              <p>Your listings are published with 0% intermediary commission. Payment settlements and fulfillment coordination occur directly between you and verified buyers.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 12: SETTINGS
+             ================================================================ -->
+        <section id="settingsView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>Platform Preferences & Settings</h2>
+              <p>Configure account alerts and interface preferences.</p>
+            </div>
+          </div>
+
+          <div class="card-box" style="max-width: 640px;">
+            <h3 style="margin-top:0;">Notification Preferences</h3>
+            <div style="display:flex; flex-direction:column; gap:14px; margin: 16px 0 24px;">
+              <label class="checkbox-label">
+                <input type="checkbox" checked disabled>
+                <span>In-app notifications for new buyer purchase orders</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" checked disabled>
+                <span>Live alerts when buyers submit counteroffers</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" checked disabled>
+                <span>Automated low-stock threshold warnings (&lt; 5 kg)</span>
+              </label>
+            </div>
+
+            <h3 style="margin-top:24px;">System Environment</h3>
+            <p style="font-size:13px; color:var(--ink-soft); margin-top:4px;">
+              Connected Backend: <strong style="color:var(--primary);" id="settingsApiUrl">Production Render API</strong>
+            </p>
+          </div>
+        </section>
+
+      </main>
     </div>
-  </main>
+  </div>
+
+  <!-- ========================================================================
+       MODALS
+       ======================================================================== -->
 
   <!-- Edit Crop Modal -->
   <div id="editModal" class="modal-overlay" style="display:none">
@@ -137,32 +734,48 @@
       <h3>Edit Crop Listing</h3>
       <form id="editCropForm">
         <input type="hidden" id="editCropId">
-        <input type="text" id="editCropName" placeholder="Crop name" required>
-        <select id="editCropCategory" required>
-          <option value="Vegetables">Vegetables</option>
-          <option value="Fruits">Fruits</option>
-          <option value="Grains">Grains</option>
-          <option value="Pulses">Pulses</option>
-          <option value="Spices">Spices</option>
-          <option value="Other">Other</option>
-        </select>
-        <input type="number" id="editPrice" placeholder="Price per kg" required>
-        <input type="number" id="editQuantity" placeholder="Quantity available" required>
+        <div class="input-group">
+          <label class="field-label" for="editCropName">Crop Name</label>
+          <input type="text" id="editCropName" placeholder="Crop name" required>
+        </div>
 
-        <div class="form-field-full">
+        <div class="input-group">
+          <label class="field-label" for="editCropCategory">Category</label>
+          <select id="editCropCategory" required>
+            <option value="Vegetables">Vegetables</option>
+            <option value="Fruits">Fruits</option>
+            <option value="Grains">Grains</option>
+            <option value="Pulses">Pulses</option>
+            <option value="Spices">Spices</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="input-group">
+            <label class="field-label" for="editPrice">Price per kg (₹)</label>
+            <input type="number" id="editPrice" placeholder="Price per kg" required>
+          </div>
+          <div class="input-group">
+            <label class="field-label" for="editQuantity">Stock Available (kg)</label>
+            <input type="number" id="editQuantity" placeholder="Quantity available" required>
+          </div>
+        </div>
+
+        <div class="input-group">
           <label class="field-label" for="editHarvestDate">Harvest Date</label>
           <input type="date" id="editHarvestDate">
         </div>
 
-        <div class="form-field-full form-checkbox-group">
+        <div class="form-field-full" style="background:var(--bg-app); border:1px solid var(--border); padding:12px; border-radius:var(--radius-md);">
           <label class="checkbox-label">
             <input type="checkbox" id="editBiddingEnabled">
             <span>Enable Buyer Price Negotiation</span>
           </label>
-        </div>
-        <div class="form-field-full" id="editMinPriceRow">
-          <label class="field-label" for="editMinBiddingPrice">Private Minimum Acceptable Price (₹/kg)</label>
-          <input type="number" id="editMinBiddingPrice" placeholder="Reserve price" min="1" step="0.5">
+          <div id="editMinPriceRow" style="margin-top:10px;">
+            <label class="field-label" for="editMinBiddingPrice">Private Minimum Acceptable Price (₹/kg)</label>
+            <input type="number" id="editMinBiddingPrice" placeholder="Reserve price" min="1" step="0.5">
+          </div>
         </div>
 
         <div class="form-field-full">
@@ -174,9 +787,15 @@
           </div>
         </div>
 
-        <textarea id="editDescription" placeholder="Description"></textarea>
-        <button type="submit">Save Changes</button>
-        <button type="button" class="secondary" onclick="closeEditModal()">Cancel</button>
+        <div class="input-group">
+          <label class="field-label" for="editDescription">Description</label>
+          <textarea id="editDescription" placeholder="Description"></textarea>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:16px;">
+          <button type="submit" class="btn-primary" style="flex:1;">Save Changes</button>
+          <button type="button" class="btn-secondary" onclick="closeEditModal()" style="flex:1;">Cancel</button>
+        </div>
       </form>
     </div>
   </div>
@@ -188,13 +807,13 @@
       <p style="font-size: 13px; color: var(--ink-soft); margin-bottom: 16px;">
         Scan with any smartphone camera to inspect verified farm origin & harvest certificate.
       </p>
-      <div id="qrImageWrap" style="margin: 16px auto; padding: 16px; background: white; border-radius: 16px; display: inline-block; border: 1px solid var(--border);">
+      <div id="qrImageWrap" style="margin: 16px auto; padding: 16px; background: white; border-radius: var(--radius-lg); display: inline-block; border: 1px solid var(--border);">
         <img id="qrModalImg" src="" alt="QR Code" style="width: 220px; height: 220px; display: block;">
       </div>
-      <div style="font-size: 13px; font-family: monospace; font-weight: 600; color: var(--leaf-dark);" id="qrModalCode"></div>
+      <div style="font-size: 13px; font-family: monospace; font-weight: 700; color: var(--primary);" id="qrModalCode"></div>
 
-      <div style="margin-top: 20px; display: flex; gap: 8px; flex-direction: column;">
-        <a id="qrPublicPageLink" href="#" target="_blank" class="btn-primary">View Public Traceability Page</a>
+      <div style="margin-top: 20px; display: flex; gap: 10px; flex-direction: column;">
+        <a id="qrPublicPageLink" href="#" target="_blank" class="btn-primary">View Public Traceability Certificate</a>
         <div style="display:flex; gap: 8px;">
           <a id="qrDownloadBtn" href="#" download="crop-traceability-qr.png" class="btn-secondary" style="flex:1;">⬇ Download PNG</a>
           <button type="button" class="btn-secondary" onclick="window.print()" style="flex:1;">🖨 Print QR</button>
@@ -210,7 +829,7 @@
       <h3>Order Fulfillment Timeline</h3>
       <div id="timelineOrderInfo" style="margin-bottom: 16px; font-size: 14px; color: var(--ink-soft);"></div>
       <div id="timelineStepper" class="timeline-stepper"></div>
-      <button type="button" class="secondary" onclick="closeTimelineModal()" style="margin-top: 20px;">Close</button>
+      <button type="button" class="btn-secondary" onclick="closeTimelineModal()" style="margin-top: 20px;">Close</button>
     </div>
   </div>
 
@@ -218,15 +837,21 @@
   <div id="counterModal" class="modal-overlay" style="display:none">
     <div class="modal-box">
       <h3>Submit Counteroffer</h3>
-      <p id="counterModalInfo" style="font-size: 14px; color: var(--ink-soft); margin-bottom: 16px;"></p>
+      <p id="counterModalInfo" style="font-size: 13.5px; color: var(--ink-soft); margin-bottom: 16px;"></p>
       <form id="counterOfferForm">
         <input type="hidden" id="counterBidId">
-        <label class="field-label" for="counterPrice">Your Proposed Price (₹/kg)</label>
-        <input type="number" id="counterPrice" placeholder="Enter counter price ₹/kg" min="1" step="0.5" required>
-        <label class="field-label" for="counterNote">Note for Buyer (Optional)</label>
-        <textarea id="counterNote" placeholder="e.g. Can do ₹45/kg if collected this weekend..."></textarea>
-        <button type="submit">Send Counteroffer</button>
-        <button type="button" class="secondary" onclick="closeCounterModal()">Cancel</button>
+        <div class="input-group">
+          <label class="field-label" for="counterPrice">Your Proposed Counter Price (₹/kg) *</label>
+          <input type="number" id="counterPrice" placeholder="Enter counter price ₹/kg" min="1" step="0.5" required>
+        </div>
+        <div class="input-group">
+          <label class="field-label" for="counterNote">Note for Buyer (Optional)</label>
+          <textarea id="counterNote" placeholder="e.g. Can do ₹45/kg if collected this weekend..."></textarea>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:16px;">
+          <button type="submit" class="btn-primary" style="flex:1;">Send Counteroffer</button>
+          <button type="button" class="btn-secondary" onclick="closeCounterModal()" style="flex:1;">Cancel</button>
+        </div>
       </form>
     </div>
   </div>
@@ -236,24 +861,44 @@
     <div class="modal-box">
       <h3>Launch Community Group Buying</h3>
       <form id="createGroupBuyForm">
-        <label class="field-label" for="gbCropSelect">Select Eligible Crop</label>
-        <select id="gbCropSelect" required>
-          <option value="" disabled selected>Choose a crop listing</option>
-        </select>
-        <label class="field-label" for="gbTitle">Campaign Title</label>
-        <input type="text" id="gbTitle" placeholder="e.g. Bulk Monsoon Rice Co-op Deal" required>
-        <label class="field-label" for="gbTargetQty">Target Volume (kg)</label>
-        <input type="number" id="gbTargetQty" placeholder="e.g. 50 kg" min="5" required>
-        <label class="field-label" for="gbDiscountPrice">Discounted Rate (₹/kg)</label>
-        <input type="number" id="gbDiscountPrice" placeholder="e.g. ₹40" min="1" step="0.5" required>
-        <label class="field-label" for="gbEndDate">Campaign Cutoff Date</label>
-        <input type="date" id="gbEndDate" required>
-        <button type="submit">Launch Campaign</button>
-        <button type="button" class="secondary" onclick="closeCreateGroupBuyModal()">Cancel</button>
+        <div class="input-group">
+          <label class="field-label" for="gbCropSelect">Select Eligible Harvest Listing *</label>
+          <select id="gbCropSelect" required>
+            <option value="" disabled selected>Choose a crop listing</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label class="field-label" for="gbTitle">Campaign Title *</label>
+          <input type="text" id="gbTitle" placeholder="e.g. Monsoon Organic Rice Co-op Deal" required>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="input-group">
+            <label class="field-label" for="gbTargetQty">Target Volume (kg) *</label>
+            <input type="number" id="gbTargetQty" placeholder="e.g. 50 kg" min="5" required>
+          </div>
+
+          <div class="input-group">
+            <label class="field-label" for="gbDiscountPrice">Wholesale Rate (₹/kg) *</label>
+            <input type="number" id="gbDiscountPrice" placeholder="e.g. ₹38" min="1" step="0.5" required>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="field-label" for="gbEndDate">Campaign Cutoff Date *</label>
+          <input type="date" id="gbEndDate" required>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+          <button type="submit" class="btn-primary" style="flex:1;">Launch Campaign</button>
+          <button type="button" class="btn-secondary" onclick="closeCreateGroupBuyModal()" style="flex:1;">Cancel</button>
+        </div>
       </form>
     </div>
   </div>
 
+  <!-- Core Scripts -->
   <script src="config.js"></script>
   <script src="ui.js"></script>
   <script src="farmer-dashboard.js"></script>

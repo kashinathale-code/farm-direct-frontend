@@ -4,88 +4,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Crop Traceability Certificate - Farm Direct</title>
-  <meta name="description" content="View verified harvest origin and farm details for this crop listing.">
+  <title>Crop Traceability Certificate — Farm Direct</title>
+  <meta name="description" content="Verified harvest origin and farm credentials for this crop listing on the Farm Direct marketplace.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link
-    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 
-<body class="app-body">
-  <!-- Navigation -->
-  <nav class="app-nav">
+<body class="dashboard-body">
+  <!-- Public Minimal Header -->
+  <nav class="landing-nav">
     <div class="nav-container">
-      <a href="index.html" class="logo">Farm Direct</a>
-      <div class="user-menu">
-        <a href="index.html" class="btn-secondary btn-small">← Back to Marketplace</a>
+      <a href="index.html" class="brand-link">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/>
+            <path d="M7 13c3 0 7-2 9-8-2 6-4 9-9 9z"/>
+            <path d="M12 22V12"/>
+          </svg>
+        </div>
+        <div class="brand-meta">
+          <span class="brand-title">Farm Direct</span>
+          <span class="brand-tagline">Harvest Traceability Registry</span>
+        </div>
+      </a>
+      <div class="nav-links">
+        <a href="index.html#marketplace" class="nav-link">Marketplace</a>
+        <a href="login.html" class="nav-button">Sign In to Order</a>
       </div>
     </div>
   </nav>
 
-  <main class="dashboard-main" style="max-width: 800px;">
-    <div class="dashboard-content">
-      <div id="traceabilityLoading" class="notif-empty" style="padding: 48px; text-align: center;">
-        <span class="pulse-indicator"></span> Verifying digital crop traceability record...
+  <main class="trace-wrapper">
+    <div id="traceabilityLoading" class="notif-empty" style="padding: 60px 20px; text-align: center; background:var(--surface); border-radius:var(--radius-xl); border:1px solid var(--border);">
+      <span class="pulse-dot"></span>
+      <span style="margin-left: 8px; font-weight:600;">Verifying digital agricultural origin certificate...</span>
+    </div>
+
+    <div id="traceabilityCard" class="trace-certificate-card" style="display:none;">
+      <div class="trace-cert-header">
+        <span class="trace-cert-badge">🛡️ VERIFIED DIGITAL HARVEST ORIGIN</span>
+        <h1 id="traceCropName">Crop Name</h1>
+        <span id="traceCategory" class="category-badge" style="font-size:12px; padding:4px 12px;">Category</span>
       </div>
 
-      <div id="traceabilityCard" style="display:none;">
-        <div class="trace-header">
-          <div class="trace-badge">
-            <span>🛡️ Verified Digital Origin</span>
-          </div>
-          <h2 id="traceCropName" style="margin-top: 12px; font-size: 32px;">Crop Name</h2>
-          <span id="traceCategory" class="category-badge">Category</span>
+      <div id="traceImageWrap" style="margin-bottom: 24px; text-align:center;">
+        <img id="traceImage" src="" alt="Harvest Photograph" class="crop-card-img" style="height: 280px; max-height: 320px; display:none; margin: 0 auto; border-radius:var(--radius-lg);">
+      </div>
+
+      <div class="trace-grid-stats">
+        <div class="trace-stat-box">
+          <div class="trace-stat-label">Harvest Date</div>
+          <div id="traceHarvestDate" class="trace-stat-val">N/A</div>
         </div>
 
-        <div id="traceImageWrap" style="margin: 24px 0;">
-          <img id="traceImage" src="" alt="Crop photo" class="crop-card-img" style="height: 260px; max-height: 300px; display:none;">
+        <div class="trace-stat-box">
+          <div class="trace-stat-label">Farming Region / Location</div>
+          <div id="traceLocation" class="trace-stat-val">India</div>
         </div>
 
-        <div class="trace-grid">
-          <div class="trace-stat-card">
-            <span class="trace-label">Harvest Date</span>
-            <strong id="traceHarvestDate" class="trace-value">N/A</strong>
-          </div>
-          <div class="trace-stat-card">
-            <span class="trace-label">Farming Region / Location</span>
-            <strong id="traceLocation" class="trace-value">India</strong>
-          </div>
-          <div class="trace-stat-card">
-            <span class="trace-label">Farmer / Producer</span>
-            <strong id="traceFarmer" class="trace-value">Verified Farmer</strong>
-          </div>
-          <div class="trace-stat-card">
-            <span class="trace-label">Listing Status</span>
-            <strong id="traceStatus" class="trace-value">Active</strong>
-          </div>
+        <div class="trace-stat-box">
+          <div class="trace-stat-label">Farmer / Producer</div>
+          <div id="traceFarmer" class="trace-stat-val">Verified Producer</div>
         </div>
 
-        <div class="trace-detail-box" style="margin-top: 24px; padding: 20px; background: var(--wheat); border-radius: 12px;">
-          <h3 style="margin: 0 0 8px; font-size: 16px;">Farmer Notes & Description</h3>
-          <p id="traceDescription" style="margin: 0; color: var(--ink);">Direct harvest notes recorded by producer.</p>
-        </div>
-
-        <div class="trace-meta-footer" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--ink-soft);">
-          <div><strong>Digital Certificate ID:</strong> <span id="traceCode" style="font-family: monospace; font-weight: 600;">FD-TRC-0000</span></div>
-          <div style="margin-top: 4px;"><strong>Recorded On:</strong> <span id="traceListedAt">-</span></div>
-          <p style="margin-top: 12px; font-size: 12px; line-height: 1.5; color: var(--ink-soft); font-style: italic;">
-            Disclaimer: Information shown represents farmer-self-reported data directly recorded upon harvest and published onto the Farm Direct marketplace.
-          </p>
-        </div>
-
-        <div style="margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
-          <a href="login.html" class="btn-primary" style="width: auto;">Log in to Place Order</a>
-          <button type="button" class="btn-secondary" onclick="window.print()" style="width: auto;">🖨️ Print Certificate</button>
+        <div class="trace-stat-box">
+          <div class="trace-stat-label">Current Marketplace Status</div>
+          <div id="traceStatus" class="trace-stat-val">Active</div>
         </div>
       </div>
 
-      <div id="traceabilityError" style="display:none; text-align: center; padding: 48px;">
-        <h3>Listing Not Found</h3>
-        <p>The requested traceability code does not match any active crop in the Farm Direct registry.</p>
-        <a href="index.html" class="btn-primary" style="margin-top: 16px; width: auto; display: inline-flex;">Go to Marketplace</a>
+      <div class="trace-notes-box">
+        <h3>Producer Origin Notes & Farming Practices</h3>
+        <p id="traceDescription">Direct harvest notes recorded by producer.</p>
       </div>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 18px; margin-top: 24px; font-size: 13px; color: var(--ink-soft);">
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+          <div><strong>Digital Certificate ID:</strong> <span id="traceCode" style="font-family: monospace; font-weight: 700; color:var(--primary);">FD-TRC-0000</span></div>
+          <div><strong>Registered On:</strong> <span id="traceListedAt">-</span></div>
+        </div>
+        <p style="margin-top: 14px; font-size: 12px; line-height: 1.5; color: var(--ink-muted); font-style: italic;">
+          Disclaimer: Information displayed represents farmer-self-reported agricultural origin data directly registered on the Farm Direct marketplace upon harvest.
+        </p>
+      </div>
+
+      <div style="margin-top: 28px; display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="login.html" class="btn-primary" style="width: auto; padding: 12px 28px;">Sign In to Purchase Produce</a>
+        <button type="button" class="btn-secondary" onclick="window.print()" style="width: auto; padding: 12px 24px;">🖨️ Print Verification Certificate</button>
+      </div>
+    </div>
+
+    <div id="traceabilityError" class="card-box" style="display:none; text-align: center; padding: 48px;">
+      <div style="font-size:36px; margin-bottom:12px;">⚠️</div>
+      <h2 style="margin-bottom:8px;">Certificate Not Found</h2>
+      <p style="margin-bottom:20px;">The requested digital traceability certificate does not match any active produce in the Farm Direct registry.</p>
+      <a href="index.html" class="btn-primary" style="width: auto;">Return to Marketplace</a>
     </div>
   </main>
 
@@ -117,12 +130,12 @@
         cardEl.style.display = 'block';
 
         document.getElementById('traceCropName').textContent = data.crop_name;
-        document.getElementById('traceCategory').textContent = data.category;
+        document.getElementById('traceCategory').textContent = data.category || 'Other';
         document.getElementById('traceHarvestDate').textContent = formatDate(data.harvest_date);
         document.getElementById('traceLocation').textContent = data.farmer_location || 'India';
         document.getElementById('traceFarmer').textContent = data.farmer_name;
-        document.getElementById('traceStatus').textContent = data.status;
-        document.getElementById('traceDescription').textContent = data.description || 'No additional description provided by farmer.';
+        document.getElementById('traceStatus').textContent = data.status || 'Active';
+        document.getElementById('traceDescription').textContent = data.description || 'Naturally grown and harvested direct from producer farm.';
         document.getElementById('traceCode').textContent = data.traceability_code;
         document.getElementById('traceListedAt').textContent = formatDate(data.listed_at);
 
