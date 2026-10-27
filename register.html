@@ -11,10 +11,20 @@
 <body class="auth-page">
   <div class="auth-card" style="max-width: 480px;">
     <div class="auth-header">
-      <a href="index.html" class="back-home-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-        Home
-      </a>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <a href="index.html" class="back-home-link" style="margin-bottom:0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          <span data-i18n="common.home">Home</span>
+        </a>
+        <div class="lang-selector-wrap">
+          <svg class="lang-globe-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          <select class="lang-selector" id="languageSelect" aria-label="Select Language">
+            <option value="en">English</option>
+            <option value="hi">हिन्दी</option>
+            <option value="mr">मराठी</option>
+          </select>
+        </div>
+      </div>
 
       <div class="auth-brand-logo">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -24,25 +34,25 @@
         </svg>
       </div>
 
-      <h2>Create Your Account</h2>
-      <p class="tagline">Join the direct agricultural trade network</p>
+      <h2 data-i18n="auth.create_title">Create Your Account</h2>
+      <p class="tagline" data-i18n="auth.create_tagline">Join the direct agricultural trade network</p>
     </div>
 
     <form id="registerForm">
       <div class="input-group">
-        <label class="field-label" for="name">Full Name *</label>
-        <input type="text" id="name" placeholder="e.g. Ramesh Patel" required autocomplete="name">
+        <label class="field-label" for="name" data-i18n="auth.name_label">Full Name *</label>
+        <input type="text" id="name" data-i18n-attr="placeholder:auth.name_placeholder" placeholder="e.g. Ramesh Patel" required autocomplete="name">
       </div>
 
       <div class="input-group">
-        <label class="field-label" for="email">Email Address *</label>
-        <input type="email" id="email" placeholder="name@example.com" required autocomplete="email">
+        <label class="field-label" for="email" data-i18n="auth.email_label">Email Address *</label>
+        <input type="email" id="email" data-i18n-attr="placeholder:auth.email_placeholder" placeholder="name@example.com" required autocomplete="email">
       </div>
 
       <div class="input-group">
-        <label class="field-label" for="password">Create Password *</label>
+        <label class="field-label" for="password" data-i18n="auth.password_label">Create Password *</label>
         <div class="password-input-wrap">
-          <input type="password" id="password" placeholder="Minimum 6 characters" required autocomplete="new-password">
+          <input type="password" id="password" data-i18n-attr="placeholder:auth.reg_password_placeholder" placeholder="Minimum 6 characters" required autocomplete="new-password">
           <button type="button" class="password-toggle-btn" id="toggleRegPasswordBtn" aria-label="Toggle password visibility">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -54,30 +64,31 @@
 
       <div class="form-grid-2">
         <div class="input-group">
-          <label class="field-label" for="role">Account Type *</label>
+          <label class="field-label" for="role" data-i18n="auth.account_type">Account Type *</label>
           <select id="role" required>
-            <option value="" disabled selected>Select Role</option>
-            <option value="farmer">Sell Crops (Farmer)</option>
-            <option value="buyer">Buy Crops (Buyer)</option>
+            <option value="" disabled selected data-i18n="auth.select_role">Select Role</option>
+            <option value="farmer" data-i18n="auth.role_farmer">Sell Crops (Farmer)</option>
+            <option value="buyer" data-i18n="auth.role_buyer">Buy Crops (Buyer)</option>
           </select>
         </div>
 
         <div class="input-group">
-          <label class="field-label" for="location">Location / Region</label>
-          <input type="text" id="location" placeholder="e.g. Pune, Maharashtra">
+          <label class="field-label" for="location" data-i18n="auth.location_label">Location / Region</label>
+          <input type="text" id="location" data-i18n-attr="placeholder:auth.location_placeholder" placeholder="e.g. Pune, Maharashtra">
         </div>
       </div>
 
-      <button type="submit" class="btn-primary" style="margin-top:10px;">Complete Registration</button>
+      <button type="submit" class="btn-primary" style="margin-top:10px;" data-i18n="auth.register_btn">Complete Registration</button>
       
       <p class="auth-switch">
-        Already have an account? <a href="login.html">Sign in here</a>
+        <span data-i18n="auth.have_account">Already have an account?</span> <a href="login.html" data-i18n="auth.login_here">Sign in here</a>
       </p>
     </form>
   </div>
 
   <script src="config.js"></script>
   <script src="ui.js"></script>
+  <script src="i18n.js"></script>
   <script src="script.js"></script>
   <script>
     // Password toggle

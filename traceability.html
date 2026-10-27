@@ -28,8 +28,16 @@
         </div>
       </a>
       <div class="nav-links">
-        <a href="index.html#marketplace" class="nav-link">Marketplace</a>
-        <a href="login.html" class="nav-button">Sign In to Order</a>
+        <div class="lang-selector-wrap">
+          <svg class="lang-globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          <select class="lang-selector" id="languageSelect" aria-label="Select Language">
+            <option value="en">English</option>
+            <option value="hi">हिन्दी</option>
+            <option value="mr">मराठी</option>
+          </select>
+        </div>
+        <a href="index.html#marketplace" class="nav-link" data-i18n="landing.marketplace">Marketplace</a>
+        <a href="login.html" class="nav-button" data-i18n="landing.login_btn">Sign In to Order</a>
       </div>
     </div>
   </nav>
@@ -37,12 +45,12 @@
   <main class="trace-wrapper">
     <div id="traceabilityLoading" class="notif-empty" style="padding: 60px 20px; text-align: center; background:var(--surface); border-radius:var(--radius-xl); border:1px solid var(--border);">
       <span class="pulse-dot"></span>
-      <span style="margin-left: 8px; font-weight:600;">Verifying digital agricultural origin certificate...</span>
+      <span style="margin-left: 8px; font-weight:600;" data-i18n="trace.loading">Verifying digital agricultural origin certificate...</span>
     </div>
 
     <div id="traceabilityCard" class="trace-certificate-card" style="display:none;">
       <div class="trace-cert-header">
-        <span class="trace-cert-badge">🛡️ VERIFIED DIGITAL HARVEST ORIGIN</span>
+        <span class="trace-cert-badge" data-i18n="trace.verified_badge">🛡️ VERIFIED DIGITAL HARVEST ORIGIN</span>
         <h1 id="traceCropName">Crop Name</h1>
         <span id="traceCategory" class="category-badge" style="font-size:12px; padding:4px 12px;">Category</span>
       </div>
@@ -53,57 +61,58 @@
 
       <div class="trace-grid-stats">
         <div class="trace-stat-box">
-          <div class="trace-stat-label">Harvest Date</div>
+          <div class="trace-stat-label" data-i18n="trace.harvest_date">Harvest Date</div>
           <div id="traceHarvestDate" class="trace-stat-val">N/A</div>
         </div>
 
         <div class="trace-stat-box">
-          <div class="trace-stat-label">Farming Region / Location</div>
+          <div class="trace-stat-label" data-i18n="trace.location">Farming Region / Location</div>
           <div id="traceLocation" class="trace-stat-val">India</div>
         </div>
 
         <div class="trace-stat-box">
-          <div class="trace-stat-label">Farmer / Producer</div>
+          <div class="trace-stat-label" data-i18n="trace.farmer">Farmer / Producer</div>
           <div id="traceFarmer" class="trace-stat-val">Verified Producer</div>
         </div>
 
         <div class="trace-stat-box">
-          <div class="trace-stat-label">Current Marketplace Status</div>
+          <div class="trace-stat-label" data-i18n="trace.status">Current Marketplace Status</div>
           <div id="traceStatus" class="trace-stat-val">Active</div>
         </div>
       </div>
 
       <div class="trace-notes-box">
-        <h3>Producer Origin Notes & Farming Practices</h3>
+        <h3 data-i18n="trace.notes_title">Producer Origin Notes & Farming Practices</h3>
         <p id="traceDescription">Direct harvest notes recorded by producer.</p>
       </div>
 
       <div style="border-top: 1px solid var(--border); padding-top: 18px; margin-top: 24px; font-size: 13px; color: var(--ink-soft);">
         <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-          <div><strong>Digital Certificate ID:</strong> <span id="traceCode" style="font-family: monospace; font-weight: 700; color:var(--primary);">FD-TRC-0000</span></div>
-          <div><strong>Registered On:</strong> <span id="traceListedAt">-</span></div>
+          <div><strong data-i18n="trace.cert_id">Digital Certificate ID:</strong> <span id="traceCode" style="font-family: monospace; font-weight: 700; color:var(--primary);">FD-TRC-0000</span></div>
+          <div><strong data-i18n="trace.registered_on">Registered On:</strong> <span id="traceListedAt">-</span></div>
         </div>
-        <p style="margin-top: 14px; font-size: 12px; line-height: 1.5; color: var(--ink-muted); font-style: italic;">
+        <p style="margin-top: 14px; font-size: 12px; line-height: 1.5; color: var(--ink-muted); font-style: italic;" data-i18n="trace.disclaimer">
           Disclaimer: Information displayed represents farmer-self-reported agricultural origin data directly registered on the Farm Direct marketplace upon harvest.
         </p>
       </div>
 
       <div style="margin-top: 28px; display: flex; gap: 12px; flex-wrap: wrap;">
-        <a href="login.html" class="btn-primary" style="width: auto; padding: 12px 28px;">Sign In to Purchase Produce</a>
-        <button type="button" class="btn-secondary" onclick="window.print()" style="width: auto; padding: 12px 24px;">🖨️ Print Verification Certificate</button>
+        <a href="login.html" class="btn-primary" style="width: auto; padding: 12px 28px;" data-i18n="trace.sign_in_order">Sign In to Purchase Produce</a>
+        <button type="button" class="btn-secondary" onclick="window.print()" style="width: auto; padding: 12px 24px;" data-i18n="trace.print_cert">🖨️ Print Verification Certificate</button>
       </div>
     </div>
 
     <div id="traceabilityError" class="card-box" style="display:none; text-align: center; padding: 48px;">
       <div style="font-size:36px; margin-bottom:12px;">⚠️</div>
-      <h2 style="margin-bottom:8px;">Certificate Not Found</h2>
-      <p style="margin-bottom:20px;">The requested digital traceability certificate does not match any active produce in the Farm Direct registry.</p>
-      <a href="index.html" class="btn-primary" style="width: auto;">Return to Marketplace</a>
+      <h2 style="margin-bottom:8px;" data-i18n="trace.not_found_title">Certificate Not Found</h2>
+      <p style="margin-bottom:20px;" data-i18n="trace.not_found_desc">The requested digital traceability certificate does not match any active produce in the Farm Direct registry.</p>
+      <a href="index.html" class="btn-primary" style="width: auto;" data-i18n="trace.return_market">Return to Marketplace</a>
     </div>
   </main>
 
   <script src="config.js"></script>
   <script src="ui.js"></script>
+  <script src="i18n.js"></script>
   <script>
     initAIAssistant();
 

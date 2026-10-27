@@ -29,11 +29,26 @@
         </div>
       </a>
       <div class="nav-links">
-        <a href="#marketplace" class="nav-link">Marketplace</a>
-        <a href="#how-it-works" class="nav-link">How it Works</a>
-        <a href="#features" class="nav-link">Features</a>
-        <a href="login.html" class="nav-link" style="font-weight:600;">Log In</a>
-        <a href="register.html" class="nav-button">Get Started</a>
+        <a href="#marketplace" class="nav-link" data-i18n="landing.marketplace">Marketplace</a>
+        <a href="#how-it-works" class="nav-link" data-i18n="landing.how_it_works">How it Works</a>
+        <a href="#features" class="nav-link" data-i18n="landing.features">Features</a>
+
+        <!-- Language Selector -->
+        <div class="lang-selector-wrap" title="Select Language">
+          <svg class="lang-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          <select id="landingLangSelect" class="fd-language-selector" aria-label="Select Language" onchange="FD_I18N.setLanguage(this.value)">
+            <option value="en">English</option>
+            <option value="hi">हिन्दी (Hindi)</option>
+            <option value="mr">मराठी (Marathi)</option>
+          </select>
+        </div>
+
+        <a href="login.html" class="nav-link" style="font-weight:600;" data-i18n="landing.login_btn">Log In</a>
+        <a href="register.html" class="nav-button" data-i18n="landing.get_started">Get Started</a>
       </div>
     </div>
   </nav>
@@ -44,22 +59,22 @@
       <div class="hero-content">
         <div class="hero-tag">
           <span class="pulse-dot"></span>
-          Direct-to-Consumer Agriculture
+          <span data-i18n="landing.hero_badge">Direct-to-Consumer Agriculture</span>
         </div>
-        <h1>Fresh from the farm, directly to your doorstep.</h1>
-        <p class="hero-subtitle">
+        <h1 data-i18n="landing.hero_title">Fresh from the farm, directly to your doorstep.</h1>
+        <p class="hero-subtitle" data-i18n="landing.hero_subtitle">
           We connect local agricultural growers directly with consumers, restaurants, and wholesale buyers. Zero intermediary commissions, 100% price transparency, and verified harvest origin.
         </p>
 
         <!-- Live Quick Search Bar -->
         <div class="hero-search-box">
-          <input type="text" id="landingSearchInput" placeholder="Search fresh crops (e.g. Alphonso Mangoes, Tomatoes, Basmati Rice)..." autocomplete="off">
-          <button id="landingSearchBtn" class="btn-primary">Browse Produce</button>
+          <input type="text" id="landingSearchInput" data-i18n-placeholder="landing.search_placeholder" placeholder="Search fresh crops (e.g. Alphonso Mangoes, Tomatoes, Basmati Rice)..." autocomplete="off">
+          <button id="landingSearchBtn" class="btn-primary" data-i18n="landing.browse_produce">Browse Produce</button>
         </div>
 
         <div class="hero-actions">
-          <a href="register.html" class="btn-primary">Start Selling as Farmer</a>
-          <a href="login.html" class="btn-secondary">Buy Fresh Harvest</a>
+          <a href="register.html" class="btn-primary" data-i18n="landing.sell_crops">Start Selling as Farmer</a>
+          <a href="login.html" class="btn-secondary" data-i18n="landing.buy_harvest">Buy Fresh Harvest</a>
         </div>
 
         <div class="hero-highlights">
@@ -249,17 +264,27 @@
 
   <script src="config.js"></script>
   <script src="ui.js"></script>
+  <script src="i18n.js"></script>
+  <script src="fair-price.js"></script>
   <script>
     // Initialize AI Assistant widget for visitors
     initAIAssistant();
+
+    // Listen to language changes
+    window.addEventListener('fd_language_changed', () => {
+      loadLandingCrops();
+    });
 
     // Fetch and display real live crop listings from API
     async function loadLandingCrops() {
       const grid = document.getElementById('landingCropGrid');
       try {
-        const res = await fetch(`${window.API_URL || API_BASE_URL}/crops`);
-        if (!res.ok) throw new Error('API fetch failed');
-        const crops = await res.json();
+        const [cropsRes] = await Promise.all([
+          fetch(`${window.API_URL || API_BASE_URL}/crops`),
+          window.FD_FairPrice ? FD_FairPrice.fetchPlatformBenchmarks() : Promise.resolve()
+        ]);
+        if (!cropsRes.ok) throw new Error('API fetch failed');
+        const crops = await cropsRes.json();
 
         if (!crops || crops.length === 0) {
           grid.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">Marketplace is live. Local farmers will be publishing new harvests soon!</div>';
@@ -274,6 +299,8 @@
             ? `<img src="${crop.image}" alt="${escapeHtml(crop.crop_name)}" class="crop-card-img" loading="lazy">`
             : `<div class="crop-card-img placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/></svg><span>Fresh Produce</span></div>`;
 
+          const priceBadge = window.FD_FairPrice ? FD_FairPrice.getBuyerBadgeHtml(crop) : '';
+
           return `
             <div class="crop-card">
               ${imageHtml}
@@ -285,6 +312,7 @@
                 <span class="crop-price-highlight">₹${escapeHtml(crop.price_per_kg)}</span>
                 <span class="crop-unit-text">/ kg</span>
               </div>
+              ${priceBadge ? `<div style="margin-bottom:6px;">${priceBadge}</div>` : ''}
               <div class="crop-farmer-meta">
                 Farmer: <strong>${escapeHtml(crop.farmer_name)}</strong> (${escapeHtml(crop.location || 'India')})
               </div>

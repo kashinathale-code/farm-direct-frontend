@@ -22,6 +22,22 @@ initDashboardShell(user, 'navBuyerOverview');
 initNotificationSystem(token);
 initAIAssistant();
 
+// Preload platform price benchmarks
+if (window.FD_FairPrice) {
+  FD_FairPrice.fetchPlatformBenchmarks();
+}
+
+// React immediately to language change event
+window.addEventListener('fd_language_changed', () => {
+  if (currentBuyerActiveView === 'buyerOverviewView') {
+    loadBuyerStatsAndOverview();
+  } else if (currentBuyerActiveView === 'browseCropsView') {
+    applyFilters();
+  } else if (currentBuyerActiveView === 'priceComparisonView') {
+    loadPriceComparison();
+  }
+});
+
 // Update Welcome Name
 const welcomeBuyerName = document.getElementById('welcomeBuyerName');
 if (welcomeBuyerName) welcomeBuyerName.textContent = user.name;
@@ -258,10 +274,13 @@ categoryChips.forEach(chip => {
 
 async function loadCrops() {
   try {
-    const res = await fetch(`${API_URL}/crops`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    allCrops = await res.json();
+    const [cropsRes] = await Promise.all([
+      fetch(`${API_URL}/crops`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }),
+      window.FD_FairPrice ? FD_FairPrice.fetchPlatformBenchmarks() : Promise.resolve()
+    ]);
+    allCrops = await cropsRes.json();
     applyFilters();
   } catch (err) {
     console.error('loadCrops error:', err);
@@ -344,6 +363,9 @@ function renderCrops(crops) {
       ? `<a href="traceability.html?code=${crop.traceability_code}" target="_blank" class="trace-chip" title="Inspect verified farm origin">🛡️ Verified Origin</a>`
       : '';
 
+    // Feature 1B: Real SQL Aggregated Fair Price Indicator Badge
+    const priceBadgeHtml = window.FD_FairPrice ? FD_FairPrice.getBuyerBadgeHtml(crop) : '';
+
     cropList.innerHTML += `
       <div class="crop-card">
         ${imageHtml}
@@ -356,6 +378,11 @@ function renderCrops(crops) {
           <span class="crop-price-highlight">₹${escapeHtml(crop.price_per_kg)}</span>
           <span class="crop-unit-text">/ kg</span>
           ${lowStock ? '<span class="badge-low">Low stock</span>' : ''}
+        </div>
+
+        <!-- Real Fair Price Indicator Badge -->
+        <div class="crop-badge-row" style="margin-bottom:6px;">
+          ${priceBadgeHtml}
         </div>
 
         <div class="crop-farmer-meta">
@@ -1010,17 +1037,23 @@ document.getElementById('joinGbForm').addEventListener('submit', async (e) => {
 });
 
 // ============================================================================
-// PRICE COMPARISON BENCHMARKING
+// PRICE COMPARISON BENCHMARKING (FEATURE 1B: Real SQL Aggregation)
 // ============================================================================
 async function loadPriceComparison() {
   const container = document.getElementById('priceComparisonContent');
   if (!container) return;
 
+  container.innerHTML = '<div class="notif-empty"><span class="pulse-dot"></span> Calculating live platform price benchmarks from active database listings...</div>';
+
   try {
-    const res = await fetch(`${API_URL}/crops`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const crops = await res.json();
+    const [insightsRes, cropsRes] = await Promise.all([
+      fetch(`${API_URL}/crops/price-insights?all=true`),
+      fetch(`${API_URL}/crops`, { headers: { 'Authorization': `Bearer ${token}` } })
+    ]);
+
+    const insightsData = await insightsRes.json();
+    const crops = await cropsRes.json();
+    const benchmarks = insightsData.benchmarks || [];
 
     if (!crops || crops.length === 0) {
       container.innerHTML = '<div class="empty-state">No produce listed to compare prices.</div>';
@@ -1041,38 +1074,111 @@ async function loadPriceComparison() {
     });
 
     container.innerHTML = `
-      <div class="table-responsive">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Produce Category</th>
-              <th>Listings</th>
-              <th>Lowest Price</th>
-              <th>Average Price</th>
-              <th>Highest Price</th>
-              <th>Direct Fair Trade Advantage</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${Object.keys(categoryStats).map(cat => {
-              const s = categoryStats[cat];
-              const avg = (s.sum / s.count).toFixed(1);
-              return `
-                <tr>
-                  <td><strong>${escapeHtml(cat)}</strong></td>
-                  <td>${s.count} available</td>
-                  <td style="color:var(--secondary); font-weight:700;">₹${s.min}/kg</td>
-                  <td><strong>₹${avg}/kg</strong></td>
-                  <td>₹${s.max}/kg</td>
-                  <td><span class="status-tag status-active">Direct Grower Pricing</span></td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
+      <div style="margin-bottom: 24px;">
+        <!-- Quick search within benchmarks -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+          <div>
+            <h3 style="margin:0 0 4px; font-size:18px;">Produce Price Benchmarks</h3>
+            <p style="margin:0; font-size:13px; color:var(--ink-soft);">Real-time aggregated benchmarks calculated directly from active Farm Direct producer listings.</p>
+          </div>
+          <input type="text" id="benchmarkTableFilter" placeholder="Filter benchmarks by crop or category..." style="max-width:300px; padding:8px 14px; border:1px solid var(--border); border-radius:8px; font-size:13px;">
+        </div>
+
+        <!-- Individual Crop Benchmarks Table -->
+        <div class="table-responsive" style="margin-bottom:28px;">
+          <table class="data-table" id="cropBenchmarkTable">
+            <thead>
+              <tr>
+                <th>Crop Listing</th>
+                <th>Category</th>
+                <th>Active Listings</th>
+                <th>Lowest Listed</th>
+                <th>Platform Benchmark (Avg)</th>
+                <th>Highest Listed</th>
+                <th>Pricing Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${benchmarks.map(b => {
+                const hasBenchmark = b.status === 'ok' && b.comparison_average != null;
+                return `
+                  <tr class="benchmark-row" data-crop="${escapeHtml(b.crop_name.toLowerCase())}" data-cat="${escapeHtml(b.category.toLowerCase())}">
+                    <td><strong>${escapeHtml(b.crop_name)}</strong></td>
+                    <td><span class="category-badge">${escapeHtml(b.category)}</span></td>
+                    <td>${b.listing_count} available</td>
+                    <td>${b.min_price != null ? `₹${b.min_price}/kg` : 'N/A'}</td>
+                    <td><strong style="color:var(--primary); font-size:15px;">${hasBenchmark ? `₹${b.comparison_average}/kg` : '<span style="font-size:12px; color:var(--ink-muted);">Building data</span>'}</strong></td>
+                    <td>${b.max_price != null ? `₹${b.max_price}/kg` : 'N/A'}</td>
+                    <td>
+                      ${hasBenchmark 
+                        ? `<span class="badge-price-deal">Active Benchmark</span>` 
+                        : `<span class="badge-price-neutral" title="Need at least 2 active listings">Insufficient data</span>`}
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style="margin:0 0 12px; font-size:17px;">Produce Category Overview</h3>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Produce Category</th>
+                <th>Available Listings</th>
+                <th>Lowest Price</th>
+                <th>Average Price</th>
+                <th>Highest Price</th>
+                <th>Direct Trade Advantage</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.keys(categoryStats).map(cat => {
+                const s = categoryStats[cat];
+                const avg = (s.sum / s.count).toFixed(1);
+                return `
+                  <tr>
+                    <td><strong>${escapeHtml(cat)}</strong></td>
+                    <td>${s.count} available</td>
+                    <td style="color:var(--secondary); font-weight:700;">₹${s.min}/kg</td>
+                    <td><strong>₹${avg}/kg</strong></td>
+                    <td>₹${s.max}/kg</td>
+                    <td><span class="status-tag status-active">Direct Grower Pricing</span></td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Disclaimer Box -->
+        <div class="calc-disclaimer-box" style="margin-top:20px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12" y2="8"></line>
+          </svg>
+          <p>Methodology Note: Benchmarks are computed using SQL aggregates (AVG, MIN, MAX) over currently active, eligible listings on the Farm Direct platform. This benchmark is not an official government APMC mandi price or verified national wholesale rate.</p>
+        </div>
       </div>
     `;
+
+    // Filter listener
+    const filterInput = document.getElementById('benchmarkTableFilter');
+    if (filterInput) {
+      filterInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        document.querySelectorAll('#cropBenchmarkTable .benchmark-row').forEach(row => {
+          const crop = row.getAttribute('data-crop') || '';
+          const cat = row.getAttribute('data-cat') || '';
+          row.style.display = (crop.includes(query) || cat.includes(query)) ? '' : 'none';
+        });
+      });
+    }
   } catch (err) {
+    console.error('loadPriceComparison error:', err);
     container.innerHTML = '<div class="empty-state">Failed to calculate price comparisons.</div>';
   }
 }

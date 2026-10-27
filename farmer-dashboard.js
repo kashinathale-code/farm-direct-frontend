@@ -24,6 +24,29 @@ initDashboardShell(user, 'navOverview');
 initNotificationSystem(token);
 initAIAssistant();
 
+// Pre-fetch platform benchmarks & initialize overview weather forecast
+if (window.FD_FairPrice) {
+  FD_FairPrice.fetchPlatformBenchmarks();
+}
+if (window.FD_Weather) {
+  FD_Weather.renderOverviewWeatherCard('overviewWeatherCard');
+}
+
+// React immediately to language change event
+window.addEventListener('fd_language_changed', () => {
+  if (currentActiveView === 'overviewView') {
+    loadStats();
+    loadOverviewPreview();
+    if (window.FD_Weather) FD_Weather.renderOverviewWeatherCard('overviewWeatherCard');
+  } else if (currentActiveView === 'cropsView') {
+    loadCrops();
+  } else if (currentActiveView === 'fairPriceView') {
+    loadFarmerFairPriceSection();
+  } else if (currentActiveView === 'weatherView') {
+    if (window.FD_Weather) FD_Weather.renderExtendedWeatherView('dedicatedWeatherContainer');
+  }
+});
+
 // Update Welcome Farmer Name
 const welcomeNameEl = document.getElementById('welcomeFarmerName');
 if (welcomeNameEl) welcomeNameEl.textContent = user.name;
@@ -44,6 +67,7 @@ window.showSection = function(viewId, title, navId) {
   if (viewId === 'overviewView') {
     loadStats();
     loadOverviewPreview();
+    if (window.FD_Weather) FD_Weather.renderOverviewWeatherCard('overviewWeatherCard');
   } else if (viewId === 'cropsView') {
     loadCrops();
   } else if (viewId === 'ordersView') {
@@ -60,6 +84,10 @@ window.showSection = function(viewId, title, navId) {
     loadAnalytics();
   } else if (viewId === 'traceabilityView') {
     loadTraceabilityCrops();
+  } else if (viewId === 'fairPriceView') {
+    loadFarmerFairPriceSection();
+  } else if (viewId === 'weatherView') {
+    if (window.FD_Weather) FD_Weather.renderExtendedWeatherView('dedicatedWeatherContainer');
   } else if (viewId === 'profileView') {
     loadFarmerProfile();
   } else if (viewId === 'settingsView') {
@@ -408,6 +436,11 @@ async function loadCrops() {
             ${lowStock ? '<span class="badge-low">Low stock</span>' : ''}
           </div>
 
+          <!-- Feature 1: Fair Price Benchmark Badge -->
+          <div id="cropBenchmarkBadge-${crop.id}" class="crop-benchmark-container" style="margin-bottom:6px;">
+            <span class="badge-price-neutral" style="cursor:pointer;" onclick="openMeterForCrop(${crop.id})">⚖️ Calculating benchmark...</span>
+          </div>
+
           ${biddingBadge}
           ${harvestHtml}
 
@@ -423,6 +456,7 @@ async function loadCrops() {
           <p style="margin:0 0 14px; font-size:13px; line-height:1.4;">${crop.description ? escapeHtml(crop.description) : 'Direct farm harvest.'}</p>
 
           <div class="crop-actions">
+            <button class="btn-secondary" onclick="openMeterForCrop(${crop.id})" title="Check Fair Price Benchmark">⚖️ Fair Price</button>
             <button class="btn-secondary" onclick="openEditModalById(${crop.id})">Edit</button>
             <button class="btn-secondary" onclick="openQrModal(${crop.id})">QR Code</button>
             <button class="danger" onclick="deleteCrop(${crop.id})">Delete</button>
@@ -430,10 +464,136 @@ async function loadCrops() {
         </div>
       `;
     });
+
+    // Populate async benchmark badges on crop cards
+    populateFarmerCropChips(crops);
   } catch (err) {
     console.error('loadCrops error:', err);
   }
 }
+
+// Asynchronously load benchmark indicators for farmer crop cards
+async function populateFarmerCropChips(crops) {
+  if (!crops || !window.FD_FairPrice) return;
+  const benchmarks = await FD_FairPrice.fetchPlatformBenchmarks();
+
+  crops.forEach(crop => {
+    const badgeEl = document.getElementById(`cropBenchmarkBadge-${crop.id}`);
+    if (!badgeEl) return;
+
+    const norm = (crop.crop_name || '').trim().toLowerCase();
+    const b = benchmarks[norm];
+
+    if (!b || b.status === 'insufficient_data' || !b.comparison_average) {
+      badgeEl.innerHTML = `
+        <span class="badge-price-neutral" onclick="openMeterForCrop(${crop.id})" title="At least 2 active listings required">
+          ⚖️ New listing benchmark
+        </span>
+      `;
+      return;
+    }
+
+    const price = Number(crop.price_per_kg);
+    const avg = Number(b.comparison_average);
+    const pctDiff = Number((((price - avg) / avg) * 100).toFixed(1));
+
+    if (pctDiff <= -5.0) {
+      badgeEl.innerHTML = `
+        <span class="badge-price-deal" style="cursor:pointer;" onclick="openMeterForCrop(${crop.id})" title="${Math.abs(pctDiff)}% below platform average (₹${avg}/kg)">
+          ✨ ${Math.abs(pctDiff)}% below avg (₹${avg}/kg)
+        </span>
+      `;
+    } else if (pctDiff >= 5.0) {
+      badgeEl.innerHTML = `
+        <span class="badge-price-above" style="cursor:pointer;" onclick="openMeterForCrop(${crop.id})" title="${pctDiff}% above platform average (₹${avg}/kg)">
+          🏷️ ${pctDiff}% above avg (₹${avg}/kg)
+        </span>
+      `;
+    } else {
+      badgeEl.innerHTML = `
+        <span class="badge-price-fair" style="cursor:pointer;" onclick="openMeterForCrop(${crop.id})" title="Within 5% of platform average (₹${avg}/kg)">
+          ⚖️ Around avg (₹${avg}/kg)
+        </span>
+      `;
+    }
+  });
+}
+
+// Open Fair Price & Savings section with a specific crop selected
+window.openMeterForCrop = function(cropId) {
+  const title = window.t ? window.t('nav.fair_price', {}, 'Fair Price & Savings') : 'Fair Price & Savings';
+  showSection('fairPriceView', title, 'navFairPrice');
+  loadFarmerFairPriceSection(cropId);
+};
+
+// FEATURE 1: Load Fair Price & Savings Section (Meter + Middleman Calculator)
+window.loadFarmerFairPriceSection = async function(preselectedCropId = null) {
+  const selector = document.getElementById('meterCropSelector');
+  const meterDisplay = document.getElementById('fairPriceMeterDisplay');
+  if (!selector || !meterDisplay) return;
+
+  meterDisplay.innerHTML = `<div class="notif-empty"><span class="pulse-dot"></span> Calculating live platform price benchmark...</div>`;
+
+  try {
+    // 1. Fetch farmer's crops if not yet in map
+    let crops = Object.values(farmerCropsMap);
+    if (!crops || crops.length === 0) {
+      const res = await fetch(`${API_URL}/crops/farmer/${user.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      crops = await res.json();
+      if (Array.isArray(crops)) {
+        crops.forEach(c => { farmerCropsMap[c.id] = c; });
+      }
+    }
+
+    // 2. Initialize Middleman Savings Calculator
+    if (window.FD_FairPrice) {
+      FD_FairPrice.initSavingsCalculator('savingsCalcContainer', crops);
+    }
+
+    if (!crops || crops.length === 0) {
+      selector.innerHTML = `<option value="">No crops listed yet</option>`;
+      meterDisplay.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🌾</div>
+          <h3>No crop listings to benchmark</h3>
+          <p>Add your first harvest listing to compare your prices against the Farm Direct platform.</p>
+          <button class="btn-primary" onclick="showSection('addCropView', 'Add New Crop', 'navAddCrop')">+ Add Crop Listing</button>
+        </div>
+      `;
+      return;
+    }
+
+    // 3. Populate selector dropdown
+    selector.innerHTML = crops.map(c => `
+      <option value="${c.id}" ${preselectedCropId == c.id ? 'selected' : ''}>
+        ${escapeHtml(c.crop_name)} — Listed at ₹${c.price_per_kg}/kg (${c.quantity_available} kg)
+      </option>
+    `).join('');
+
+    let targetCropId = preselectedCropId || selector.value || crops[0].id;
+    selector.value = targetCropId;
+
+    async function updateMeter(cropId) {
+      meterDisplay.innerHTML = `<div class="notif-empty"><span class="pulse-dot"></span> Calculating live platform price benchmark...</div>`;
+      if (window.FD_FairPrice) {
+        const benchmark = await FD_FairPrice.fetchListingBenchmark(cropId);
+        FD_FairPrice.renderFairPriceMeter(meterDisplay, benchmark);
+      }
+    }
+
+    selector.onchange = () => {
+      updateMeter(selector.value);
+    };
+
+    // Load initial benchmark
+    await updateMeter(targetCropId);
+  } catch (err) {
+    console.error('loadFarmerFairPriceSection error:', err);
+    meterDisplay.innerHTML = `<div class="empty-state">Could not load benchmark data. Please try again.</div>`;
+  }
+};
 
 // Farmer Crop Category Filters
 const farmerCatChips = document.querySelectorAll('#farmerCategoryChips .category-chip');

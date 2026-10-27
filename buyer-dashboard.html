@@ -260,6 +260,20 @@
         </div>
 
         <div class="header-right">
+          <!-- Language Selector (English, Hindi, Marathi) -->
+          <div class="lang-selector-wrap" title="Select Language">
+            <svg class="lang-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            <select id="buyerHeaderLangSelect" class="fd-language-selector" aria-label="Select Language" onchange="FD_I18N.setLanguage(this.value)">
+              <option value="en">English</option>
+              <option value="hi">हिन्दी (Hindi)</option>
+              <option value="mr">मराठी (Marathi)</option>
+            </select>
+          </div>
+
           <!-- Notification Bell -->
           <div class="notif-container" id="notificationContainer">
             <button id="notifBellBtn" class="notif-bell-btn" title="Notifications" aria-label="Notifications">
@@ -789,6 +803,8 @@
   <!-- Scripts -->
   <script src="config.js"></script>
   <script src="ui.js"></script>
+  <script src="i18n.js"></script>
+  <script src="fair-price.js"></script>
   <script src="buyer-dashboard.js"></script>
 </body>
 </html>
