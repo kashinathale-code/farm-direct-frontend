@@ -11,8 +11,8 @@
 </head>
 
 <body class="dashboard-body">
-  <!-- Public Minimal Header -->
-  <nav class="landing-nav">
+  <!-- Public Navigation Header -->
+  <nav class="landing-nav" aria-label="Main Navigation">
     <div class="nav-container">
       <a href="index.html" class="brand-link">
         <div class="brand-icon">
@@ -24,23 +24,97 @@
         </div>
         <div class="brand-meta">
           <span class="brand-title">Farm Direct</span>
-          <span class="brand-tagline">Harvest Traceability Registry</span>
+          <span class="brand-tagline" data-i18n="footer.tagline">Fair Agricultural Trade</span>
         </div>
       </a>
+
       <div class="nav-links">
-        <div class="lang-selector-wrap">
-          <svg class="lang-globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-          <select class="lang-selector" id="languageSelect" aria-label="Select Language">
+        <a href="index.html" class="nav-link" data-i18n="nav.home">Home</a>
+        <a href="index.html#marketplace" class="nav-link" data-i18n="landing.marketplace">Marketplace</a>
+        <a href="index.html#how-it-works" class="nav-link" data-i18n="landing.how_it_works">How It Works</a>
+        <a href="index.html#features" class="nav-link" data-i18n="landing.features">Features</a>
+
+        <!-- Language Selector -->
+        <div class="lang-selector-wrap" title="Select Language">
+          <svg class="lang-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          <select class="fd-language-selector" id="languageSelect" aria-label="Select Language" onchange="FD_I18N.setLanguage(this.value)">
             <option value="en">English</option>
-            <option value="hi">हिन्दी</option>
-            <option value="mr">मराठी</option>
+            <option value="hi">हिन्दी (Hindi)</option>
+            <option value="mr">मराठी (Marathi)</option>
           </select>
         </div>
-        <a href="index.html#marketplace" class="nav-link" data-i18n="landing.marketplace">Marketplace</a>
-        <a href="login.html" class="nav-button" data-i18n="landing.login_btn">Sign In to Order</a>
+
+        <a href="login.html" class="nav-link" style="font-weight:600;" data-i18n="landing.login_btn">Log In</a>
+        <a href="register.html" class="nav-button" data-i18n="landing.get_started">Get Started</a>
       </div>
+
+      <!-- Mobile Hamburger Button -->
+      <button class="nav-toggle-btn" id="publicNavToggle" aria-label="Toggle navigation menu" aria-expanded="false" data-i18n-aria="nav.menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
     </div>
   </nav>
+
+  <!-- Mobile Nav Drawer & Backdrop -->
+  <div class="public-nav-backdrop" id="publicNavBackdrop"></div>
+  <aside class="public-nav-drawer" id="publicNavDrawer" aria-label="Mobile Navigation">
+    <div class="drawer-header">
+      <div class="brand-link">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/>
+            <path d="M7 13c3 0 7-2 9-8-2 6-4 9-9 9z"/>
+            <path d="M12 22V12"/>
+          </svg>
+        </div>
+        <div class="brand-meta">
+          <span class="brand-title">Farm Direct</span>
+          <span class="brand-tagline" data-i18n="footer.tagline">Fair Agricultural Trade</span>
+        </div>
+      </div>
+      <button class="drawer-close-btn" id="publicNavClose" aria-label="Close navigation menu" data-i18n-aria="nav.close_menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="drawer-links">
+      <a href="index.html" class="drawer-link" data-i18n="nav.home">Home</a>
+      <a href="index.html#marketplace" class="drawer-link" data-i18n="landing.marketplace">Marketplace</a>
+      <a href="index.html#how-it-works" class="drawer-link" data-i18n="landing.how_it_works">How It Works</a>
+      <a href="index.html#features" class="drawer-link" data-i18n="landing.features">Features</a>
+      <a href="traceability.html" class="drawer-link active" data-i18n="footer.crop_traceability">Crop Traceability</a>
+    </div>
+    <div class="drawer-divider"></div>
+    <div class="drawer-lang">
+      <label class="field-label" data-i18n="common.language" style="display:block; margin-bottom:8px; font-weight:600; font-size:13px;">Language</label>
+      <div class="lang-selector-wrap" title="Select Language" style="width:100%;">
+        <svg class="lang-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        <select class="fd-language-selector" aria-label="Select Language" onchange="FD_I18N.setLanguage(this.value)" style="width:100%;">
+          <option value="en">English</option>
+          <option value="hi">हिन्दी (Hindi)</option>
+          <option value="mr">मराठी (Marathi)</option>
+        </select>
+      </div>
+    </div>
+    <div class="drawer-actions">
+      <a href="login.html" class="btn-secondary" style="width:100%; text-align:center;" data-i18n="landing.login_btn">Log In</a>
+      <a href="register.html" class="btn-primary" style="width:100%; text-align:center;" data-i18n="landing.get_started">Get Started</a>
+    </div>
+  </aside>
 
   <main class="trace-wrapper">
     <div id="traceabilityLoading" class="notif-empty" style="padding: 60px 20px; text-align: center; background:var(--surface); border-radius:var(--radius-xl); border:1px solid var(--border);">
@@ -72,12 +146,25 @@
 
         <div class="trace-stat-box">
           <div class="trace-stat-label" data-i18n="trace.farmer">Farmer / Producer</div>
-          <div id="traceFarmer" class="trace-stat-val">Verified Producer</div>
+          <div id="traceFarmer" class="trace-stat-val" style="display:flex; align-items:center; gap:6px;">
+            <span id="traceFarmerName">Verified Producer</span>
+            <span id="traceFarmerBadge" style="display:none; font-size:11px; background:#DEF7EC; color:#03543F; padding:2px 8px; border-radius:999px; font-weight:700;">✓ Verified</span>
+          </div>
         </div>
 
         <div class="trace-stat-box">
-          <div class="trace-stat-label" data-i18n="trace.status">Current Marketplace Status</div>
-          <div id="traceStatus" class="trace-stat-val">Active</div>
+          <div class="trace-stat-label" data-i18n="trace.batch_id">Batch Identifier</div>
+          <div id="traceBatchId" class="trace-stat-val" style="font-family:monospace; color:var(--primary); font-size:13px;">BATCH-001</div>
+        </div>
+      </div>
+
+      <!-- 5-Stage Supply Chain Milestone Timeline -->
+      <div class="trace-notes-box" style="margin-top:20px;">
+        <h3 style="display:flex; align-items:center; gap:8px;">
+          <span>📦</span> Verified Supply Chain Milestones
+        </h3>
+        <div id="traceTimelineContainer" class="timeline-stepper" style="margin-top:16px;">
+          <!-- Dynamically populated from data.events -->
         </div>
       </div>
 
@@ -110,11 +197,69 @@
     </div>
   </main>
 
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <!-- Col 1: Brand & Mission -->
+      <div class="footer-col footer-brand">
+        <div class="logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:#68D391;">
+            <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/>
+            <path d="M7 13c3 0 7-2 9-8-2 6-4 9-9 9z"/>
+            <path d="M12 22V12"/>
+          </svg>
+          <span>Farm Direct</span>
+        </div>
+        <span class="footer-tagline" data-i18n="footer.tagline">Fair Agricultural Trade</span>
+        <p data-i18n="footer.mission">
+          Connecting farmers directly with buyers to create a transparent agricultural marketplace and improve farmers' access to fair prices.
+        </p>
+      </div>
+
+      <!-- Col 2: Explore -->
+      <div class="footer-col">
+        <strong data-i18n="footer.explore">Explore</strong>
+        <a href="index.html" data-i18n="nav.home">Home</a>
+        <a href="index.html#marketplace" data-i18n="landing.marketplace">Marketplace</a>
+        <a href="index.html#how-it-works" data-i18n="landing.how_it_works">How It Works</a>
+        <a href="index.html#features" data-i18n="landing.features">Features</a>
+      </div>
+
+      <!-- Col 3: Account -->
+      <div class="footer-col">
+        <strong data-i18n="footer.account">Account</strong>
+        <a href="login.html" data-i18n="footer.buyer_login">Buyer Login</a>
+        <a href="login.html" data-i18n="footer.farmer_login">Farmer Login</a>
+        <a href="register.html" data-i18n="footer.create_account">Create Account</a>
+      </div>
+
+      <!-- Col 4: Our Platform -->
+      <div class="footer-col">
+        <strong data-i18n="footer.our_platform">Our Platform</strong>
+        <a href="index.html#marketplace" data-i18n="footer.marketplace_title">Direct Farmer-to-Buyer Marketplace</a>
+        <a href="index.html#features" data-i18n="footer.fair_price_meter">Fair Price Meter</a>
+        <a href="index.html#features" data-i18n="footer.savings_calc">Middleman Savings Calculator</a>
+        <a href="traceability.html" data-i18n="footer.crop_traceability">Crop Traceability</a>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="footer-bottom">
+      <div>
+        <span data-i18n="footer.copyright">© 2026 Farm Direct. All Rights Reserved.</span>
+      </div>
+      <div>
+        <span data-i18n="footer.built_with">Built with the goal of empowering farmers through digital technology.</span>
+      </div>
+    </div>
+  </footer>
+
   <script src="config.js"></script>
   <script src="ui.js"></script>
   <script src="i18n.js"></script>
   <script>
     initAIAssistant();
+    if (typeof initPublicNav === 'function') initPublicNav();
 
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code') || urlParams.get('id');
@@ -142,16 +287,54 @@
         document.getElementById('traceCategory').textContent = data.category || 'Other';
         document.getElementById('traceHarvestDate').textContent = formatDate(data.harvest_date);
         document.getElementById('traceLocation').textContent = data.farmer_location || 'India';
-        document.getElementById('traceFarmer').textContent = data.farmer_name;
-        document.getElementById('traceStatus').textContent = data.status || 'Active';
+        
+        const farmerNameEl = document.getElementById('traceFarmerName') || document.getElementById('traceFarmer');
+        if (farmerNameEl) farmerNameEl.textContent = data.farmer ? data.farmer.name : (data.farmer_name || 'Verified Producer');
+        
+        const badgeEl = document.getElementById('traceFarmerBadge');
+        if (badgeEl && data.farmer && data.farmer.is_verified) {
+          badgeEl.style.display = 'inline-block';
+        }
+
+        const batchEl = document.getElementById('traceBatchId');
+        if (batchEl) batchEl.textContent = data.batch_id || 'BATCH-' + data.traceability_code;
+
         document.getElementById('traceDescription').textContent = data.description || 'Naturally grown and harvested direct from producer farm.';
         document.getElementById('traceCode').textContent = data.traceability_code;
         document.getElementById('traceListedAt').textContent = formatDate(data.listed_at);
 
-        if (data.image && data.image.startsWith('data:image/jpeg;base64,')) {
+        if (data.image && data.image.startsWith('data:image/')) {
           const imgEl = document.getElementById('traceImage');
           imgEl.src = data.image;
           imgEl.style.display = 'block';
+        }
+
+        // Render Milestones Stepper
+        const timelineEl = document.getElementById('traceTimelineContainer');
+        if (timelineEl) {
+          const events = data.events && data.events.length > 0 ? data.events : [
+            { stage_name: 'Harvest & Field Packaging', location: data.farmer_location || 'Farm', description: 'Harvested fresh directly on farm.', event_date: data.harvest_date || data.listed_at, performed_by: data.farmer_name },
+            { stage_name: 'Direct Marketplace Listing', location: 'Farm Direct Network', description: 'Batch registered and published on marketplace.', event_date: data.listed_at, performed_by: 'Platform Quality Check' }
+          ];
+
+          timelineEl.innerHTML = events.map((ev, idx) => `
+            <div class="timeline-step done" style="display:flex; gap:16px; margin-bottom:16px; position:relative;">
+              <div style="display:flex; flex-direction:column; align-items:center;">
+                <div style="width:28px; height:28px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">
+                  ✓
+                </div>
+                ${idx < events.length - 1 ? '<div style="width:2px; flex:1; background:var(--primary-subtle); margin-top:4px;"></div>' : ''}
+              </div>
+              <div style="padding-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <strong style="font-size:14px; color:var(--ink);">${ev.stage_name}</strong>
+                  <span style="font-size:11px; color:var(--ink-muted);">${formatDate(ev.event_date)}</span>
+                </div>
+                <div style="font-size:12.5px; color:var(--ink-soft); margin-top:2px;">${ev.description}</div>
+                <div style="font-size:11.5px; color:var(--secondary); font-weight:600; margin-top:2px;">📍 ${ev.location || 'Local Farm'} · Signed by: ${ev.performed_by || 'Producer'}</div>
+              </div>
+            </div>
+          `).join('');
         }
       } catch (err) {
         loadingEl.style.display = 'none';

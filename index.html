@@ -12,8 +12,8 @@
 </head>
 
 <body class="landing-page">
-  <!-- Navigation -->
-  <nav class="landing-nav">
+  <!-- Public Navigation Header -->
+  <nav class="landing-nav" aria-label="Main Navigation">
     <div class="nav-container">
       <a href="index.html" class="brand-link">
         <div class="brand-icon">
@@ -25,12 +25,16 @@
         </div>
         <div class="brand-meta">
           <span class="brand-title">Farm Direct</span>
-          <span class="brand-tagline">Fair Agricultural Trade</span>
+          <span class="brand-tagline" data-i18n="footer.tagline">Fair Agricultural Trade</span>
         </div>
       </a>
+
+      <!-- Desktop Navigation Links -->
       <div class="nav-links">
+        <a href="index.html" class="nav-link active" data-i18n="nav.home">Home</a>
         <a href="#marketplace" class="nav-link" data-i18n="landing.marketplace">Marketplace</a>
-        <a href="#how-it-works" class="nav-link" data-i18n="landing.how_it_works">How it Works</a>
+        <a href="market-prices.html" class="nav-link" data-i18n="nav.market_prices">APMC Mandi Prices</a>
+        <a href="traceability.html" class="nav-link" data-i18n="footer.crop_traceability">Crop Traceability</a>
         <a href="#features" class="nav-link" data-i18n="landing.features">Features</a>
 
         <!-- Language Selector -->
@@ -50,8 +54,71 @@
         <a href="login.html" class="nav-link" style="font-weight:600;" data-i18n="landing.login_btn">Log In</a>
         <a href="register.html" class="nav-button" data-i18n="landing.get_started">Get Started</a>
       </div>
+
+      <!-- Mobile Hamburger Button -->
+      <button class="nav-toggle-btn" id="publicNavToggle" aria-label="Toggle navigation menu" aria-expanded="false" data-i18n-aria="nav.menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
     </div>
   </nav>
+
+  <!-- Mobile Navigation Drawer & Backdrop -->
+  <div class="public-nav-backdrop" id="publicNavBackdrop"></div>
+  <aside class="public-nav-drawer" id="publicNavDrawer" aria-label="Mobile Navigation">
+    <div class="drawer-header">
+      <div class="brand-link">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/>
+            <path d="M7 13c3 0 7-2 9-8-2 6-4 9-9 9z"/>
+            <path d="M12 22V12"/>
+          </svg>
+        </div>
+        <div class="brand-meta">
+          <span class="brand-title">Farm Direct</span>
+          <span class="brand-tagline" data-i18n="footer.tagline">Fair Agricultural Trade</span>
+        </div>
+      </div>
+      <button class="drawer-close-btn" id="publicNavClose" aria-label="Close navigation menu" data-i18n-aria="nav.close_menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="drawer-links">
+      <a href="index.html" class="drawer-link active" data-i18n="nav.home">Home</a>
+      <a href="#marketplace" class="drawer-link" data-i18n="landing.marketplace">Marketplace</a>
+      <a href="market-prices.html" class="drawer-link" data-i18n="nav.market_prices">APMC Mandi Prices</a>
+      <a href="traceability.html" class="drawer-link" data-i18n="footer.crop_traceability">Crop Traceability</a>
+      <a href="#how-it-works" class="drawer-link" data-i18n="landing.how_it_works">How It Works</a>
+      <a href="#features" class="drawer-link" data-i18n="landing.features">Features</a>
+    </div>
+    <div class="drawer-divider"></div>
+    <div class="drawer-lang">
+      <label class="field-label" data-i18n="common.language" style="display:block; margin-bottom:8px; font-weight:600; font-size:13px;">Language</label>
+      <div class="lang-selector-wrap" title="Select Language" style="width:100%;">
+        <svg class="lang-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        <select id="mobileDrawerLangSelect" class="fd-language-selector" aria-label="Select Language" onchange="FD_I18N.setLanguage(this.value)" style="width:100%;">
+          <option value="en">English</option>
+          <option value="hi">हिन्दी (Hindi)</option>
+          <option value="mr">मराठी (Marathi)</option>
+        </select>
+      </div>
+    </div>
+    <div class="drawer-actions">
+      <a href="login.html" class="btn-secondary" style="width:100%; text-align:center;" data-i18n="landing.login_btn">Log In</a>
+      <a href="register.html" class="btn-primary" style="width:100%; text-align:center;" data-i18n="landing.get_started">Get Started</a>
+    </div>
+  </aside>
 
   <main>
     <!-- Hero Section -->
@@ -234,31 +301,57 @@
   <!-- Footer -->
   <footer class="app-footer">
     <div class="footer-container">
-      <div class="footer-col">
-        <div class="logo">Farm Direct</div>
-        <p>A Digital Platform for Direct-to-Consumer Crop Sales. Built as a College Engineering Minor Project to empower farmers with fair market access.</p>
+      <!-- Col 1: Brand & Mission -->
+      <div class="footer-col footer-brand">
+        <div class="logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:#68D391;">
+            <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/>
+            <path d="M7 13c3 0 7-2 9-8-2 6-4 9-9 9z"/>
+            <path d="M12 22V12"/>
+          </svg>
+          <span>Farm Direct</span>
+        </div>
+        <span class="footer-tagline" data-i18n="footer.tagline">Fair Agricultural Trade</span>
+        <p data-i18n="footer.mission">
+          Connecting farmers directly with buyers to create a transparent agricultural marketplace and improve farmers' access to fair prices.
+        </p>
       </div>
+
+      <!-- Col 2: Explore -->
       <div class="footer-col">
-        <strong>Marketplace</strong>
-        <a href="#marketplace">Browse Produce</a>
-        <a href="#how-it-works">How It Works</a>
-        <a href="#features">Platform Features</a>
-        <a href="login.html">Buyer Sign In</a>
+        <strong data-i18n="footer.explore">Explore</strong>
+        <a href="index.html" data-i18n="nav.home">Home</a>
+        <a href="#marketplace" data-i18n="landing.marketplace">Marketplace</a>
+        <a href="#how-it-works" data-i18n="landing.how_it_works">How It Works</a>
+        <a href="#features" data-i18n="landing.features">Features</a>
       </div>
+
+      <!-- Col 3: Account -->
       <div class="footer-col">
-        <strong>Farmer Console</strong>
-        <a href="register.html">List Your Harvest</a>
-        <a href="login.html">Farmer Dashboard</a>
-        <a href="login.html">Co-Op Group Buying</a>
+        <strong data-i18n="footer.account">Account</strong>
+        <a href="login.html" data-i18n="footer.buyer_login">Buyer Login</a>
+        <a href="login.html" data-i18n="footer.farmer_login">Farmer Login</a>
+        <a href="register.html" data-i18n="footer.create_account">Create Account</a>
       </div>
+
+      <!-- Col 4: Our Platform -->
       <div class="footer-col">
-        <strong>Project Specs</strong>
-        <p>BTech Computer Science & Engineering Minor Project.</p>
-        <p>Frontend: Netlify · Backend: Render Cloud · Database: TiDB MySQL.</p>
+        <strong data-i18n="footer.our_platform">Our Platform</strong>
+        <a href="#marketplace" data-i18n="footer.marketplace_title">Direct Farmer-to-Buyer Marketplace</a>
+        <a href="#features" data-i18n="footer.fair_price_meter">Fair Price Meter</a>
+        <a href="#features" data-i18n="footer.savings_calc">Middleman Savings Calculator</a>
+        <a href="traceability.html" data-i18n="footer.crop_traceability">Crop Traceability</a>
       </div>
     </div>
+
+    <!-- Bottom Bar -->
     <div class="footer-bottom">
-      © 2026 Farm Direct — Open Agriculture Platform.
+      <div>
+        <span data-i18n="footer.copyright">© 2026 Farm Direct. All Rights Reserved.</span>
+      </div>
+      <div>
+        <span data-i18n="footer.built_with">Built with the goal of empowering farmers through digital technology.</span>
+      </div>
     </div>
   </footer>
 
@@ -294,12 +387,18 @@
         // Show up to 4 real listings
         const displayCrops = crops.slice(0, 4);
         grid.innerHTML = displayCrops.map(crop => {
-          const hasImage = crop.image && crop.image.startsWith('data:image/jpeg;base64,');
+          const hasImage = crop.image && crop.image.startsWith('data:image/');
           const imageHtml = hasImage
             ? `<img src="${crop.image}" alt="${escapeHtml(crop.crop_name)}" class="crop-card-img" loading="lazy">`
             : `<div class="crop-card-img placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/></svg><span>Fresh Produce</span></div>`;
 
           const priceBadge = window.FD_FairPrice ? FD_FairPrice.getBuyerBadgeHtml(crop) : '';
+          const bulkBadge = crop.bulk_pricing && Array.isArray(crop.bulk_pricing) && crop.bulk_pricing.length > 0
+            ? `<div style="margin-bottom:6px;"><span class="badge-bulk">📦 Bulk from ₹${crop.bulk_pricing[0].price_per_kg}/kg</span></div>`
+            : '';
+          const verifiedBadge = crop.farmer_is_verified
+            ? `<span style="font-size:11px; background:#DEF7EC; color:#03543F; padding:1px 6px; border-radius:999px; font-weight:700; margin-left:4px;">✓ Verified</span>`
+            : '';
 
           return `
             <div class="crop-card">
@@ -313,8 +412,9 @@
                 <span class="crop-unit-text">/ kg</span>
               </div>
               ${priceBadge ? `<div style="margin-bottom:6px;">${priceBadge}</div>` : ''}
+              ${bulkBadge}
               <div class="crop-farmer-meta">
-                Farmer: <strong>${escapeHtml(crop.farmer_name)}</strong> (${escapeHtml(crop.location || 'India')})
+                Farmer: <strong>${escapeHtml(crop.farmer_name)}</strong>${verifiedBadge} (${escapeHtml(crop.location || 'India')})
               </div>
               ${crop.harvest_date ? `<div class="crop-harvest-date">📅 Harvested: ${formatDate(crop.harvest_date)}</div>` : ''}
               <p style="margin: 6px 0 14px; font-size: 13px; line-height: 1.4;">${crop.description ? escapeHtml(crop.description.slice(0, 80)) + (crop.description.length > 80 ? '...' : '') : 'Direct from farm harvest.'}</p>

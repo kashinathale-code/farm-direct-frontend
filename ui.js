@@ -540,3 +540,52 @@ async function handleAssistantQuery(query, streamElementId = 'aiMessageStream') 
 
   stream.scrollTop = stream.scrollHeight;
 }
+
+// ============================================================================
+// PUBLIC NAVIGATION CONTROLLER (HAMBURGER & MOBILE DRAWER)
+// ============================================================================
+function initPublicNav() {
+  const toggleBtn = document.getElementById('publicNavToggle');
+  const drawer = document.getElementById('publicNavDrawer');
+  const backdrop = document.getElementById('publicNavBackdrop');
+  const closeBtn = document.getElementById('publicNavClose');
+  if (!toggleBtn || !drawer) return;
+
+  function openNav() {
+    drawer.classList.add('open');
+    if (backdrop) backdrop.classList.add('active');
+    toggleBtn.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeNav() {
+    drawer.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('active');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    const isOpen = drawer.classList.contains('open');
+    if (isOpen) closeNav(); else openNav();
+  });
+
+  if (closeBtn) closeBtn.addEventListener('click', closeNav);
+  if (backdrop) backdrop.addEventListener('click', closeNav);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && drawer.classList.contains('open')) {
+      closeNav();
+    }
+  });
+
+  drawer.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', closeNav);
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initPublicNav);
+} else {
+  initPublicNav();
+}

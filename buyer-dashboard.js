@@ -16,6 +16,8 @@ let allCrops = [];
 let allBuyerOrders = [];
 let selectedCategory = 'All';
 let currentBuyerActiveView = 'buyerOverviewView';
+let buyerWishlistSet = new Set();
+let buyerUserCoords = null;
 
 // Initialize Dashboard Shell, Notification System, and AI Assistant
 initDashboardShell(user, 'navBuyerOverview');
@@ -77,6 +79,14 @@ window.showBuyerSection = function(viewId, title, navId) {
     loadBuyerProfile();
   } else if (viewId === 'buyerSettingsView') {
     loadBuyerSettings();
+  } else if (viewId === 'buyerWishlistView') {
+    loadBuyerWishlist();
+  } else if (viewId === 'buyerPriceAlertsView') {
+    loadBuyerPriceAlerts();
+  } else if (viewId === 'buyerMarketPricesView') {
+    loadBuyerMandiPrices();
+  } else if (viewId === 'nearbyFarmersView') {
+    loadNearbyFarmers();
   }
 };
 
@@ -342,7 +352,8 @@ function renderCrops(crops) {
 
   crops.forEach(crop => {
     const lowStock = Number(crop.quantity_available) < LOW_STOCK_THRESHOLD;
-    const hasImage = crop.image && crop.image.startsWith('data:image/jpeg;base64,');
+    const hasImage = crop.image && crop.image.startsWith('data:image/');
+    const isWishlisted = buyerWishlistSet.has(crop.id);
 
     const imageHtml = hasImage
       ? `<img src="${crop.image}" alt="${escapeHtml(crop.crop_name)}" class="crop-card-img" loading="lazy">`
@@ -363,11 +374,27 @@ function renderCrops(crops) {
       ? `<a href="traceability.html?code=${crop.traceability_code}" target="_blank" class="trace-chip" title="Inspect verified farm origin">🛡️ Verified Origin</a>`
       : '';
 
+    const bulkBadge = crop.bulk_pricing && Array.isArray(crop.bulk_pricing) && crop.bulk_pricing.length > 0
+      ? `<span class="badge-bulk">📦 Bulk from ₹${crop.bulk_pricing[0].price_per_kg}/kg</span>`
+      : '';
+
+    const distanceBadge = crop.distance_km != null
+      ? `<span class="distance-badge">📍 ${crop.distance_km} km away</span>`
+      : '';
+
+    const verifiedBadge = crop.farmer_is_verified
+      ? `<span class="badge-verified">✓ Verified</span>`
+      : '';
+
     // Feature 1B: Real SQL Aggregated Fair Price Indicator Badge
     const priceBadgeHtml = window.FD_FairPrice ? FD_FairPrice.getBuyerBadgeHtml(crop) : '';
 
     cropList.innerHTML += `
-      <div class="crop-card">
+      <div class="crop-card" style="position:relative;">
+        <button class="wishlist-toggle-btn ${isWishlisted ? 'active' : ''}" onclick="toggleCropWishlist(event, ${crop.id})" style="position:absolute; top:12px; right:12px; z-index:2;" title="Save to wishlist">
+          ${isWishlisted ? '❤️' : '🤍'}
+        </button>
+
         ${imageHtml}
         <div class="crop-header-row">
           <strong>${escapeHtml(crop.crop_name)}</strong>
@@ -380,13 +407,15 @@ function renderCrops(crops) {
           ${lowStock ? '<span class="badge-low">Low stock</span>' : ''}
         </div>
 
-        <!-- Real Fair Price Indicator Badge -->
-        <div class="crop-badge-row" style="margin-bottom:6px;">
+        <div class="crop-badge-row" style="margin-bottom:6px; display:flex; gap:6px; flex-wrap:wrap;">
           ${priceBadgeHtml}
+          ${bulkBadge}
+          ${distanceBadge}
         </div>
 
         <div class="crop-farmer-meta">
-          Farmer: <strong>${escapeHtml(crop.farmer_name)}</strong> (${escapeHtml(crop.location || 'India')})
+          Farmer: <strong style="cursor:pointer; color:var(--primary); text-decoration:underline;" onclick="openFarmerProfileModal(${crop.farmer_id})">${escapeHtml(crop.farmer_name)}</strong>
+          ${verifiedBadge} (${escapeHtml(crop.location || 'India')})
         </div>
 
         ${biddingTag}
@@ -405,9 +434,10 @@ function renderCrops(crops) {
 
         <!-- Order actions -->
         <div class="order-row">
-          <input type="number" id="qty-${crop.id}" placeholder="Qty (kg)" min="1" max="${crop.quantity_available}" value="1">
+          <input type="number" id="qty-${crop.id}" placeholder="Qty (kg)" min="1" max="${crop.quantity_available}" value="1" oninput="checkOrderTierDiscountPreview(${crop.id})">
           <button class="btn-primary" onclick="placeOrder(${crop.id})">Order Now</button>
         </div>
+        <div id="tierDiscountPreview-${crop.id}" style="font-size:12px; color:var(--secondary); font-weight:700; margin-top:4px; display:none;"></div>
 
         ${crop.bidding_enabled ? `
           <div style="margin-top: 8px;">
@@ -512,6 +542,7 @@ async function loadOrders() {
 
           <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
             <button class="btn-secondary btn-small" onclick="openBuyerTimeline(${order.id})">🕒 View Fulfillment Timeline</button>
+            ${order.status === 'delivered' ? `<button class="btn-primary btn-small" onclick="openLeaveReviewModal(${order.id}, '${escapeHtml(order.crop_name)}', '${escapeHtml(order.farmer_name)}')">⭐ Leave Review</button>` : ''}
             ${order.status === 'pending' ? `<button class="danger btn-small" onclick="cancelOrder(${order.id})">Cancel Order</button>` : ''}
             <button class="toggle-messages btn-small" onclick="toggleBuyerMessages(${order.id}, ${order.farmer_id})">💬 Message Farmer</button>
           </div>
@@ -1310,3 +1341,496 @@ loadBuyerStatsAndOverview();
 loadCrops();
 loadOrders();
 loadBuyerBids();
+
+
+// ============================================================================
+// FARM DIRECT V3 — BUYER WISHLIST, PRICE ALERTS, NEARBY & REVIEWS
+// ============================================================================
+
+// Fetch wishlist IDs to mark hearts on initial load
+async function fetchBuyerWishlistIds() {
+  try {
+    const res = await fetch(`${API_URL}/wishlist`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const items = await res.json();
+    buyerWishlistSet = new Set(items.map(i => i.id));
+  } catch (e) {
+    console.warn('fetchBuyerWishlistIds error:', e.message);
+  }
+}
+fetchBuyerWishlistIds();
+
+// 1. WISHLIST MANAGEMENT
+window.toggleCropWishlist = async function(e, cropId) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  const btn = e.currentTarget || e.target;
+  const isCurrentlyIn = buyerWishlistSet.has(cropId);
+
+  try {
+    if (isCurrentlyIn) {
+      const res = await fetch(`${API_URL}/wishlist/${cropId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        buyerWishlistSet.delete(cropId);
+        btn.innerHTML = '🤍';
+        btn.classList.remove('active');
+        showToast('Removed from wishlist', 'info');
+        if (currentBuyerActiveView === 'buyerWishlistView') loadBuyerWishlist();
+      }
+    } else {
+      const res = await fetch(`${API_URL}/wishlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ crop_id: cropId })
+      });
+      if (res.ok) {
+        buyerWishlistSet.add(cropId);
+        btn.innerHTML = '❤️';
+        btn.classList.add('active');
+        showToast('Added to wishlist!', 'success');
+      }
+    }
+  } catch (err) {
+    showToast('Failed to update wishlist', 'error');
+  }
+};
+
+window.loadBuyerWishlist = async function() {
+  const grid = document.getElementById('buyerWishlistGrid');
+  if (!grid) return;
+  grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px;"><span class="pulse-dot"></span> Loading wishlist...</div>';
+
+  try {
+    const res = await fetch(`${API_URL}/wishlist`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const items = await res.json();
+
+    if (!items || items.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <div class="empty-state-icon">❤️</div>
+          <h3>Your wishlist is empty</h3>
+          <p>Browse fresh farm produce and tap the heart icon to save items here for fast ordering.</p>
+          <button class="btn-primary" onclick="showBuyerSection('browseCropsView', 'Browse Crops', 'navBrowseCrops')">Explore Marketplace</button>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = items.map(c => {
+      const hasImage = c.image && c.image.startsWith('data:image/');
+      const imageHtml = hasImage
+        ? `<img src="${c.image}" alt="${escapeHtml(c.crop_name)}" class="crop-card-img" loading="lazy">`
+        : `<div class="crop-card-img placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/></svg><span>Fresh Produce</span></div>`;
+
+      return `
+        <div class="crop-card" style="position:relative;">
+          <button class="wishlist-toggle-btn active" onclick="toggleCropWishlist(event, ${c.id})" style="position:absolute; top:12px; right:12px; z-index:2;" title="Remove from wishlist">
+            ❤️
+          </button>
+          ${imageHtml}
+          <div class="crop-header-row">
+            <strong>${escapeHtml(c.crop_name)}</strong>
+            <span class="category-badge">${escapeHtml(c.category || 'Other')}</span>
+          </div>
+          <div class="crop-meta-row">
+            <span class="crop-price-highlight">₹${escapeHtml(c.price_per_kg)}</span>
+            <span class="crop-unit-text">/ kg</span>
+            <span class="status-tag status-active" style="font-size:11px;">In Stock (${c.quantity_available} kg)</span>
+          </div>
+          <div class="crop-farmer-meta">
+            Farmer: <strong style="cursor:pointer; color:var(--primary); text-decoration:underline;" onclick="openFarmerProfileModal(${c.farmer_id})">${escapeHtml(c.farmer_name)}</strong>
+            ${c.farmer_is_verified ? '<span class="badge-verified" style="margin-left:4px;">✓ Verified</span>' : ''}
+          </div>
+          <div class="order-row" style="margin-top:auto; padding-top:12px;">
+            <input type="number" id="qty-${c.id}" value="1" min="1" max="${c.quantity_available}" style="width:70px;">
+            <button class="btn-primary btn-small" onclick="placeOrder(${c.id})">Order Now</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Could not load wishlist.</div>';
+  }
+};
+
+// 2. LIVE BULK TIER DISCOUNT PREVIEW DURING QUANTITY ENTRY
+window.checkOrderTierDiscountPreview = function(cropId) {
+  const crop = allCrops.find(c => c.id === cropId);
+  const qtyInput = document.getElementById(`qty-${cropId}`);
+  const previewEl = document.getElementById(`tierDiscountPreview-${cropId}`);
+  if (!crop || !qtyInput || !previewEl) return;
+
+  const qty = parseInt(qtyInput.value, 10);
+  if (isNaN(qty) || qty <= 0 || !crop.bulk_pricing || !Array.isArray(crop.bulk_pricing)) {
+    previewEl.style.display = 'none';
+    return;
+  }
+
+  const basePrice = parseFloat(crop.price_per_kg);
+  const matchingTier = crop.bulk_pricing
+    .filter(t => qty >= Number(t.min_qty) && (t.max_qty == null || qty <= Number(t.max_qty)))
+    .sort((a, b) => Number(a.price_per_kg) - Number(b.price_per_kg))[0];
+
+  if (matchingTier && Number(matchingTier.price_per_kg) < basePrice) {
+    const savings = Number(((basePrice - Number(matchingTier.price_per_kg)) * qty).toFixed(2));
+    previewEl.style.display = 'block';
+    previewEl.innerHTML = `🎉 Bulk Tier Unlocked: ₹${matchingTier.price_per_kg}/kg (You save ₹${savings}!)`;
+  } else {
+    previewEl.style.display = 'none';
+  }
+};
+
+// 3. PRICE ALERTS
+window.handleCreatePriceAlert = async function(e) {
+  e.preventDefault();
+  const crop_name = document.getElementById('alertCropName').value.trim();
+  const target_price = document.getElementById('alertTargetPrice').value;
+  const district = document.getElementById('alertDistrict').value.trim();
+
+  try {
+    const res = await fetch(`${API_URL}/price-alerts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ crop_name, target_price, district })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(data.message || 'Price alert registered!', 'success');
+      e.target.reset();
+      loadBuyerPriceAlerts();
+    } else {
+      showToast(data.error || 'Failed to create alert', 'error');
+    }
+  } catch (err) {
+    showToast('Network error setting alert', 'error');
+  }
+};
+
+window.loadBuyerPriceAlerts = async function() {
+  const tbody = document.getElementById('priceAlertsTableBody');
+  if (!tbody) return;
+
+  try {
+    const res = await fetch(`${API_URL}/price-alerts`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const alerts = await res.json();
+
+    if (!alerts || alerts.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:16px;">No active price alerts set yet. Use the form above to get notified on price drops.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = alerts.map(a => `
+      <tr>
+        <td><strong>${escapeHtml(a.crop_name)}</strong></td>
+        <td><strong style="color:var(--primary);">₹${a.target_price}/kg</strong> or lower</td>
+        <td>${escapeHtml(a.district || 'Any District')}</td>
+        <td>
+          <span class="status-tag status-active">Active</span>
+          ${a.is_triggered ? '<span class="badge-price-deal" style="margin-left:4px;">🎯 Triggered</span>' : ''}
+        </td>
+        <td>${formatDate(a.created_at)}</td>
+        <td>
+          <button class="danger btn-small" onclick="deletePriceAlert(${a.id})">Delete</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:16px; color:var(--danger);">Error loading price alerts.</td></tr>';
+  }
+};
+
+window.deletePriceAlert = async function(id) {
+  if (!confirm('Delete this price alert?')) return;
+  try {
+    const res = await fetch(`${API_URL}/price-alerts/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      showToast('Price alert removed', 'success');
+      loadBuyerPriceAlerts();
+    }
+  } catch (e) {
+    showToast('Failed to delete alert', 'error');
+  }
+};
+
+// 4. BUYER APMC MANDI PRICES VIEW
+let allBuyerMandiData = [];
+
+window.loadBuyerMandiPrices = async function() {
+  const grid = document.getElementById('buyerMandiGrid');
+  if (!grid) return;
+  grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px;"><span class="pulse-dot"></span> Loading live APMC market data...</div>';
+
+  try {
+    const res = await fetch(`${API_URL}/market-prices`);
+    allBuyerMandiData = await res.json();
+    renderBuyerMandiCards(allBuyerMandiData);
+  } catch (err) {
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--ink-soft);">Could not retrieve live APMC rates.</div>';
+  }
+};
+
+function renderBuyerMandiCards(prices) {
+  const grid = document.getElementById('buyerMandiGrid');
+  if (!grid) return;
+
+  if (prices.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--ink-soft);">No mandis match your filter.</div>';
+    return;
+  }
+
+  grid.innerHTML = prices.map(p => `
+    <div class="card-box" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <span class="mandi-badge" style="font-size:11px; background:var(--bg-app); padding:2px 8px; border-radius:999px;">📍 ${p.market_name}</span>
+          <span style="font-size:11.5px; color:var(--ink-muted);">${p.district}, ${p.state}</span>
+        </div>
+        <h3 style="margin:4px 0 2px; font-size:1.15rem;">${p.commodity}</h3>
+        <span style="font-size:12px; color:var(--ink-soft);">${p.variety || 'FAQ'} (${p.grade || 'FAQ'})</span>
+
+        <div style="background:var(--bg-app); border-radius:var(--radius-md); padding:10px 14px; margin:12px 0; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:10px; text-transform:uppercase; color:var(--ink-muted); font-weight:700; display:block;">Mandi Modal Price</span>
+            <strong style="font-size:1.3rem; color:var(--primary);">₹${p.modal_price_per_kg}/kg</strong>
+          </div>
+          <div style="text-align:right;">
+            <span style="font-size:11px; color:var(--ink-muted);">Wholesale Rate</span>
+            <div style="font-weight:700; font-size:13px;">₹${p.modal_price}/Qtl</div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft);">
+          <span>Min: ₹${(p.min_price / 100).toFixed(1)}/kg</span>
+          <span>Max: ₹${(p.max_price / 100).toFixed(1)}/kg</span>
+          <span>Arrival: ${p.arrival_qty || 0} Qtl</span>
+        </div>
+      </div>
+      <div style="margin-top:12px; padding-top:10px; border-top:1px solid var(--border-light); font-size:11px; color:var(--ink-muted); display:flex; justify-content:space-between;">
+        <span>Arrival: ${p.arrival_date || 'Today'}</span>
+        <span style="color:var(--secondary); font-weight:600;">Govt Agmarknet</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.filterBuyerMandiPrices = function() {
+  const comm = document.getElementById('buyerMandiCommodity').value.toLowerCase();
+  const dist = document.getElementById('buyerMandiDistrict').value.toLowerCase().trim();
+
+  const filtered = allBuyerMandiData.filter(p => {
+    const matchComm = !comm || (p.commodity && p.commodity.toLowerCase() === comm);
+    const matchDist = !dist || (p.district && p.district.toLowerCase().includes(dist));
+    return matchComm && matchDist;
+  });
+
+  renderBuyerMandiCards(filtered);
+};
+
+// 5. NEARBY FARMERS & GEOLOCATION
+window.detectBuyerLocation = function() {
+  if (!navigator.geolocation) {
+    showToast('Geolocation is not supported by your browser', 'error');
+    return;
+  }
+  showToast('Detecting your GPS location...', 'info');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      buyerUserCoords = {
+        lat: Number(pos.coords.latitude.toFixed(4)),
+        lon: Number(pos.coords.longitude.toFixed(4))
+      };
+      const textEl = document.getElementById('buyerLocationCoordsText');
+      if (textEl) textEl.textContent = `GPS: Lat ${buyerUserCoords.lat}°, Lon ${buyerUserCoords.lon}° (Active)`;
+      showToast('Location updated! Finding closest farmers...', 'success');
+      loadNearbyFarmers();
+    },
+    err => {
+      showToast('Could not acquire GPS: using default Pune/Baramati location', 'info');
+      buyerUserCoords = { lat: 18.5204, lon: 73.8567 };
+      loadNearbyFarmers();
+    },
+    { timeout: 10000, enableHighAccuracy: true }
+  );
+};
+
+window.loadNearbyFarmers = async function() {
+  const grid = document.getElementById('nearbyFarmersGrid');
+  const radiusSelect = document.getElementById('nearbyRadiusSelect');
+  if (!grid) return;
+
+  const radius = radiusSelect ? radiusSelect.value : '50';
+  const coords = buyerUserCoords || { lat: 18.5204, lon: 73.8567 };
+
+  grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px;"><span class="pulse-dot"></span> Calculating distances to verified farms...</div>';
+
+  try {
+    let url = `${API_URL}/crops?lat=${coords.lat}&lng=${coords.lon}&sort=distance`;
+    if (radius !== 'all') url += `&radius=${radius}`;
+
+    const res = await fetch(url);
+    const crops = await res.json();
+
+    if (!crops || crops.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <div class="empty-state-icon">🚜</div>
+          <h3>No farms found within selected radius</h3>
+          <p>Try widening the distance filter (e.g. 100 km or All Distances) to explore regional growers.</p>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = crops.map(c => `
+      <div class="crop-card">
+        <div class="crop-header-row">
+          <strong>${escapeHtml(c.crop_name)}</strong>
+          <span class="distance-badge">📍 ${c.distance_km != null ? c.distance_km + ' km' : 'Local'}</span>
+        </div>
+        <div class="crop-meta-row">
+          <span class="crop-price-highlight">₹${c.price_per_kg}</span>
+          <span class="crop-unit-text">/ kg</span>
+        </div>
+        <div class="crop-farmer-meta" style="margin:6px 0;">
+          Farmer: <strong style="cursor:pointer; color:var(--primary); text-decoration:underline;" onclick="openFarmerProfileModal(${c.farmer_id})">${escapeHtml(c.farmer_name)}</strong>
+          ${c.farmer_is_verified ? '<span class="badge-verified" style="margin-left:4px;">✓ Verified</span>' : ''}
+          <div style="font-size:12px; color:var(--ink-soft); margin-top:2px;">Location: ${escapeHtml(c.farmer_district || c.location || 'Maharashtra')}</div>
+        </div>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 14px;">${c.description ? escapeHtml(c.description) : 'Direct harvest produce.'}</p>
+        <div class="order-row" style="margin-top:auto;">
+          <input type="number" id="qty-${c.id}" value="1" min="1" max="${c.quantity_available}">
+          <button class="btn-primary" onclick="placeOrder(${c.id})">Order Now</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Failed to load nearby farms.</div>';
+  }
+};
+
+// 6. ORDER REVIEWS (RATING & FEEDBACK)
+let currentReviewRating = 5;
+
+window.openLeaveReviewModal = function(orderId, cropName, farmerName) {
+  const modal = document.getElementById('leaveReviewModal');
+  const summaryEl = document.getElementById('reviewOrderSummary');
+  const orderIdInput = document.getElementById('reviewOrderId');
+
+  if (orderIdInput) orderIdInput.value = orderId;
+  if (summaryEl) {
+    summaryEl.innerHTML = `Order #${orderId} — <strong>${escapeHtml(cropName)}</strong> from <strong>${escapeHtml(farmerName)}</strong>`;
+  }
+
+  setRatingStar(5);
+  modal.style.display = 'flex';
+};
+
+window.closeReviewModal = function() {
+  const modal = document.getElementById('leaveReviewModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.setRatingStar = function(val) {
+  currentReviewRating = val;
+  const ratingValInput = document.getElementById('reviewRatingVal');
+  if (ratingValInput) ratingValInput.value = val;
+
+  const starSpans = document.querySelectorAll('#starRatingSelect span');
+  starSpans.forEach(s => {
+    const starVal = parseInt(s.dataset.val, 10);
+    if (starVal <= val) {
+      s.classList.add('selected');
+    } else {
+      s.classList.remove('selected');
+    }
+  });
+};
+
+window.handleSubmitReview = async function(e) {
+  e.preventDefault();
+  const order_id = document.getElementById('reviewOrderId').value;
+  const rating = currentReviewRating;
+  const review_text = document.getElementById('reviewTextInput').value.trim();
+
+  try {
+    const res = await fetch(`${API_URL}/reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ order_id, rating, review_text })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Review submitted successfully! Thank you for supporting the farmer.', 'success');
+      closeReviewModal();
+      loadOrders();
+    } else {
+      showToast(data.error || 'Failed to submit review', 'error');
+    }
+  } catch (err) {
+    showToast('Network error submitting review', 'error');
+  }
+};
+
+// 7. FARMER PUBLIC PROFILE MODAL
+window.openFarmerProfileModal = async function(farmerId) {
+  const modal = document.getElementById('farmerProfileModal');
+  const nameEl = document.getElementById('modalFarmerName');
+  const locEl = document.getElementById('modalFarmerLocation');
+  const avatarEl = document.getElementById('modalFarmerAvatar');
+  const ratingEl = document.getElementById('modalFarmerRating');
+  const ordersEl = document.getElementById('modalFarmerOrders');
+  const expEl = document.getElementById('modalFarmerExp');
+  const bioEl = document.getElementById('modalFarmerBio');
+  const reviewsList = document.getElementById('modalFarmerReviewsList');
+
+  modal.style.display = 'flex';
+  reviewsList.innerHTML = '<div style="color:var(--ink-soft); font-size:12.5px;">Loading credentials & feedback...</div>';
+
+  try {
+    const res = await fetch(`${API_URL}/profile/farmer/${farmerId}`);
+    if (!res.ok) throw new Error('Failed to load profile');
+    const data = await res.json();
+    const f = data.farmer;
+
+    nameEl.textContent = f.name;
+    locEl.textContent = `${f.district || f.location || 'Region'}, ${f.state || 'India'}`;
+    avatarEl.textContent = getInitials(f.name);
+    ratingEl.textContent = `⭐ ${f.average_rating || '5.0'} (${f.total_reviews} reviews)`;
+    ordersEl.textContent = `${f.completed_orders || 0} Delivered`;
+    expEl.textContent = `${f.experience_years || 5}+ Yrs Exp`;
+    bioEl.textContent = f.farming_bio || 'Dedicated local agricultural grower committed to high quality produce.';
+
+    if (data.reviews && data.reviews.length > 0) {
+      reviewsList.innerHTML = data.reviews.map(r => `
+        <div style="background:var(--bg-app); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:10px 12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <strong style="font-size:12.5px; color:var(--ink);">${escapeHtml(r.buyer_name)} <small style="color:var(--ink-muted);">(${escapeHtml(r.crop_name)})</small></strong>
+            <span style="color:#F59E0B; font-size:12px;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+          </div>
+          <p style="margin:0; font-size:12px; color:var(--ink-soft); line-height:1.4;">${r.review_text ? escapeHtml(r.review_text) : 'Verified purchase rating.'}</p>
+          <span style="font-size:10.5px; color:var(--ink-muted); display:block; margin-top:4px;">${formatDate(r.created_at)}</span>
+        </div>
+      `).join('');
+    } else {
+      reviewsList.innerHTML = '<div style="color:var(--ink-soft); font-size:12.5px; padding:10px;">No public reviews posted yet for this farmer.</div>';
+    }
+  } catch (err) {
+    reviewsList.innerHTML = '<div style="color:var(--danger); font-size:12.5px;">Could not load profile.</div>';
+  }
+};
+
+window.closeFarmerProfileModal = function() {
+  const modal = document.getElementById('farmerProfileModal');
+  if (modal) modal.style.display = 'none';
+};

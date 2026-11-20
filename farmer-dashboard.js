@@ -92,6 +92,14 @@ window.showSection = function(viewId, title, navId) {
     loadFarmerProfile();
   } else if (viewId === 'settingsView') {
     loadFarmerSettings();
+  } else if (viewId === 'marketPricesView') {
+    loadFarmerMandiPrices();
+  } else if (viewId === 'profitCalcView') {
+    loadFarmerProfitHistory();
+  } else if (viewId === 'harvestCalendarView') {
+    loadFarmerHarvestPlans();
+  } else if (viewId === 'demandInsightsView') {
+    loadFarmerDemandInsights();
   }
 };
 
@@ -632,6 +640,8 @@ document.getElementById('cropForm').addEventListener('submit', async (e) => {
   const bidding_enabled = document.getElementById('biddingEnabled').checked;
   const min_bidding_price = bidding_enabled ? document.getElementById('minBiddingPrice').value : null;
   const description = document.getElementById('description').value.trim();
+  const batch_id = document.getElementById('addCropBatchId') ? document.getElementById('addCropBatchId').value.trim() : null;
+  const bulk_pricing = typeof getBulkTiersFromForm === 'function' ? getBulkTiersFromForm() : null;
   const btn = e.target.querySelector('button[type="submit"]');
 
   setLoading(btn, true);
@@ -648,7 +658,9 @@ document.getElementById('cropForm').addEventListener('submit', async (e) => {
         harvest_date,
         bidding_enabled,
         min_bidding_price,
-        image: currentAddImage
+        image: currentAddImage,
+        batch_id: batch_id || undefined,
+        bulk_pricing: bulk_pricing || undefined
       })
     });
     const data = await res.json();
@@ -1449,3 +1461,615 @@ loadStats();
 loadOverviewPreview();
 loadCrops();
 loadOrders();
+
+
+// ============================================================================
+// FARM DIRECT V3 — BULK PRICING & MANDI BENCHMARK PREVIEWS
+// ============================================================================
+
+window.addBulkTierRow = function(minQty = 50, maxQty = 100, price = '') {
+  const container = document.getElementById('bulkTierList');
+  if (!container) return;
+
+  const rowId = 'tierRow_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+  const rowHtml = `
+    <div id="${rowId}" style="display:flex; gap:8px; align-items:center; background:white; padding:8px 12px; border-radius:6px; border:1px solid var(--border-light);">
+      <div style="flex:1;">
+        <span style="font-size:11px; color:var(--ink-muted); display:block;">Min kg</span>
+        <input type="number" class="tier-min" value="${minQty}" min="1" style="width:100%; padding:6px 8px; font-size:13px;">
+      </div>
+      <div style="flex:1;">
+        <span style="font-size:11px; color:var(--ink-muted); display:block;">Max kg (Opt)</span>
+        <input type="number" class="tier-max" value="${maxQty || ''}" min="1" placeholder="No limit" style="width:100%; padding:6px 8px; font-size:13px;">
+      </div>
+      <div style="flex:1;">
+        <span style="font-size:11px; color:var(--ink-muted); display:block;">Discount ₹/kg</span>
+        <input type="number" class="tier-price" value="${price}" min="1" step="0.5" placeholder="e.g. 24" required style="width:100%; padding:6px 8px; font-size:13px;">
+      </div>
+      <button type="button" onclick="removeBulkTierRow('${rowId}')" class="danger btn-small" style="margin-top:16px;" title="Remove tier">✕</button>
+    </div>
+  `;
+  container.insertAdjacentHTML('beforeend', rowHtml);
+};
+
+window.removeBulkTierRow = function(rowId) {
+  const row = document.getElementById(rowId);
+  if (row) row.remove();
+};
+
+function getBulkTiersFromForm() {
+  const container = document.getElementById('bulkTierList');
+  if (!container) return null;
+  const rows = container.querySelectorAll('[id^="tierRow_"]');
+  const tiers = [];
+  rows.forEach(r => {
+    const min = parseFloat(r.querySelector('.tier-min').value);
+    const maxVal = r.querySelector('.tier-max').value;
+    const max = maxVal ? parseFloat(maxVal) : null;
+    const price = parseFloat(r.querySelector('.tier-price').value);
+    if (!isNaN(min) && !isNaN(price) && price > 0) {
+      tiers.push({ min_qty: min, max_qty: max, price_per_kg: price });
+    }
+  });
+  return tiers.length > 0 ? tiers : null;
+}
+
+let mandiPreviewTimer = null;
+window.checkFarmerMandiBenchmarkPreview = function() {
+  clearTimeout(mandiPreviewTimer);
+  mandiPreviewTimer = setTimeout(async () => {
+    const cropName = document.getElementById('cropName') ? document.getElementById('cropName').value.trim() : '';
+    const price = document.getElementById('price') ? parseFloat(document.getElementById('price').value) : 0;
+    const previewEl = document.getElementById('addCropMandiPreview');
+    if (!previewEl) return;
+
+    if (!cropName || !price || price <= 0) {
+      previewEl.style.display = 'none';
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/market-prices/benchmark?commodity=${encodeURIComponent(cropName)}&price=${price}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.status === 'success') {
+        previewEl.style.display = 'block';
+        previewEl.innerHTML = `
+          <span class="${data.is_lower ? 'badge-mandi-below' : 'badge-mandi-above'}">
+            🏛️ APMC Benchmark (${data.market_name}): Modal ₹${data.mandi_modal_per_kg}/kg (${data.summary_text})
+          </span>
+        `;
+      } else {
+        previewEl.style.display = 'none';
+      }
+    } catch (e) {
+      previewEl.style.display = 'none';
+    }
+  }, 400);
+};
+
+// ============================================================================
+// VIEW 15: APMC MANDI MARKET PRICES
+// ============================================================================
+let allFarmerMandiData = [];
+
+window.loadFarmerMandiPrices = async function() {
+  const grid = document.getElementById('farmerMandiGrid');
+  if (!grid) return;
+  grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px;"><span class="pulse-dot"></span> Loading live APMC market data...</div>';
+
+  try {
+    const res = await fetch(`${API_URL}/market-prices`);
+    if (!res.ok) throw new Error('Failed to load prices');
+    allFarmerMandiData = await res.json();
+    renderFarmerMandiCards(allFarmerMandiData);
+  } catch (err) {
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--ink-soft);">Could not retrieve live APMC market rates.</div>';
+  }
+};
+
+function renderFarmerMandiCards(prices) {
+  const grid = document.getElementById('farmerMandiGrid');
+  if (!grid) return;
+
+  if (prices.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--ink-soft);">No mandis found matching filter.</div>';
+    return;
+  }
+
+  grid.innerHTML = prices.map(p => `
+    <div class="card-box" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <span class="mandi-badge" style="font-size:11px; background:var(--bg-app); padding:2px 8px; border-radius:999px;">📍 ${p.market_name}</span>
+          <span style="font-size:11.5px; color:var(--ink-muted);">${p.district}, ${p.state}</span>
+        </div>
+        <h3 style="margin:4px 0 2px; font-size:1.15rem;">${p.commodity}</h3>
+        <span style="font-size:12px; color:var(--ink-soft);">${p.variety || 'FAQ'} (${p.grade || 'FAQ'})</span>
+
+        <div style="background:var(--bg-app); border-radius:var(--radius-md); padding:10px 14px; margin:12px 0; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:10px; text-transform:uppercase; color:var(--ink-muted); font-weight:700; display:block;">Modal Wholesale</span>
+            <strong style="font-size:1.3rem; color:var(--primary);">₹${p.modal_price_per_kg}/kg</strong>
+          </div>
+          <div style="text-align:right;">
+            <span style="font-size:11px; color:var(--ink-muted);">Rate</span>
+            <div style="font-weight:700; font-size:13px;">₹${p.modal_price}/Qtl</div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft);">
+          <span>Min: ₹${(p.min_price / 100).toFixed(1)}/kg</span>
+          <span>Max: ₹${(p.max_price / 100).toFixed(1)}/kg</span>
+          <span>Arrival: ${p.arrival_qty || 0} Qtl</span>
+        </div>
+      </div>
+      <div style="margin-top:12px; padding-top:10px; border-top:1px solid var(--border-light); font-size:11px; color:var(--ink-muted); display:flex; justify-content:space-between;">
+        <span>Arrival: ${p.arrival_date || 'Today'}</span>
+        <span style="color:var(--secondary); font-weight:600;">Govt Agmarknet</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.filterFarmerMandiPrices = function() {
+  const comm = document.getElementById('farmerMandiCommodity').value.toLowerCase();
+  const state = document.getElementById('farmerMandiState').value.toLowerCase();
+  const dist = document.getElementById('farmerMandiDistrict').value.toLowerCase().trim();
+
+  const filtered = allFarmerMandiData.filter(p => {
+    const matchComm = !comm || (p.commodity && p.commodity.toLowerCase() === comm);
+    const matchState = !state || (p.state && p.state.toLowerCase() === state);
+    const matchDist = !dist || (p.district && p.district.toLowerCase().includes(dist));
+    return matchComm && matchState && matchDist;
+  });
+
+  renderFarmerMandiCards(filtered);
+};
+
+// ============================================================================
+// VIEW 16: FARMER COST & PROFIT CALCULATOR
+// ============================================================================
+let lastProfitCalculation = null;
+
+window.handleCalculateProfit = async function(e) {
+  e.preventDefault();
+  const resultsContainer = document.getElementById('profitResultsContainer');
+  const saveBtn = document.getElementById('saveCalcBtn');
+  if (!resultsContainer) return;
+
+  resultsContainer.innerHTML = '<div style="text-align:center; padding:30px;"><span class="pulse-dot"></span> Calculating financial breakdown & mandi comparison...</div>';
+
+  const payload = {
+    crop_name: document.getElementById('pcCropName').value,
+    acreage: document.getElementById('pcAcreage').value,
+    seed_cost: document.getElementById('pcSeedCost').value,
+    fertilizer_cost: document.getElementById('pcFertCost').value,
+    labor_cost: document.getElementById('pcLaborCost').value,
+    irrigation_cost: document.getElementById('pcIrrigCost').value,
+    transport_cost: document.getElementById('pcTransCost').value,
+    other_cost: document.getElementById('pcOtherCost').value,
+    expected_yield_kg: document.getElementById('pcYieldKg').value,
+    selling_price_per_kg: document.getElementById('pcSellPrice').value,
+    district: user ? (user.district || user.location) : null
+  };
+
+  try {
+    const res = await fetch(`${API_URL}/profit-calculator/calculate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Calculation error');
+    const data = await res.json();
+    lastProfitCalculation = { ...payload, ...data };
+
+    if (saveBtn) saveBtn.style.display = 'inline-block';
+
+    const fin = data.financials;
+    const costs = data.costs;
+    const mandi = data.mandi_comparison;
+
+    let mandiHtml = '';
+    if (mandi) {
+      mandiHtml = `
+        <div style="background:linear-gradient(135deg, #F0FDF4, #DCFCE7); border:1px solid #BBF7D0; border-radius:var(--radius-lg); padding:16px; margin-top:18px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-size:20px;">⚖️</span>
+            <strong style="color:#14532D; font-size:13.5px;">Direct Platform Advantage vs Traditional APMC Mandi</strong>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:12.5px; color:#166534;">
+            <div>Nearby Mandi Modal Rate: <strong>₹${mandi.mandi_modal_rate_per_kg}/kg</strong></div>
+            <div>Mandi Middleman Deductions (~10%): <strong>₹${mandi.estimated_middleman_cut.toLocaleString()}</strong></div>
+            <div>Net Farmer Profit on Farm Direct: <strong style="color:#15803D; font-size:14px;">₹${fin.net_profit.toLocaleString()}</strong></div>
+            <div>Estimated Mandi Net Return: <strong>₹${mandi.mandi_net_earning.toLocaleString()}</strong></div>
+          </div>
+          <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #86EFAC; font-weight:700; color:#14532D; font-size:13px;">
+            🚀 You earn ₹${mandi.direct_extra_profit.toLocaleString()} (+${mandi.direct_extra_percentage}%) more by selling directly without middleman cuts!
+          </div>
+        </div>
+      `;
+    }
+
+    resultsContainer.innerHTML = `
+      <div>
+        <h3 style="margin-top:0;">Financial Summary: ${escapeHtml(data.crop_name)}</h3>
+
+        <div class="profit-metric-highlight">
+          <span style="font-size:12px; color:var(--ink-muted); text-transform:uppercase; font-weight:700; display:block;">Estimated Net Farm Profit</span>
+          <div style="font-size:2.2rem; font-weight:800; color:${fin.is_profitable ? 'var(--primary)' : 'var(--danger)'};">
+            ₹${fin.net_profit.toLocaleString()}
+          </div>
+          <span style="font-size:12px; font-weight:700; color:${fin.is_profitable ? 'var(--secondary)' : 'var(--danger)'};">
+            ${fin.roi_percentage}% ROI · Profit ₹${fin.profit_per_kg}/kg
+          </span>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:16px;">
+          <div style="background:var(--bg-app); padding:12px; border-radius:var(--radius-md);">
+            <span style="font-size:11px; color:var(--ink-muted); display:block;">Total Cultivation Cost</span>
+            <strong style="font-size:1.15rem; color:var(--ink);">₹${costs.total_cost.toLocaleString()}</strong>
+            <span style="font-size:11px; color:var(--ink-soft); display:block;">Cost per kg: ₹${costs.cost_per_kg}</span>
+          </div>
+
+          <div style="background:var(--bg-app); padding:12px; border-radius:var(--radius-md);">
+            <span style="font-size:11px; color:var(--ink-muted); display:block;">Gross Farm Revenue</span>
+            <strong style="font-size:1.15rem; color:var(--ink);">₹${fin.gross_revenue.toLocaleString()}</strong>
+            <span style="font-size:11px; color:var(--ink-soft); display:block;">Breakeven price: ₹${fin.break_even_price}/kg</span>
+          </div>
+        </div>
+
+        <div style="font-size:12.5px; color:var(--ink-soft); padding:10px; background:var(--bg-app); border-radius:var(--radius-md); border-left:3px solid var(--secondary);">
+          💡 <strong>Advisory:</strong> ${escapeHtml(data.advisory_note)}
+        </div>
+
+        ${mandiHtml}
+      </div>
+    `;
+  } catch (err) {
+    resultsContainer.innerHTML = '<div style="color:var(--danger); padding:20px;">Failed to calculate profit. Please verify all inputs.</div>';
+  }
+};
+
+window.saveCurrentProfitCalculation = async function() {
+  if (!lastProfitCalculation) return;
+  try {
+    const res = await fetch(`${API_URL}/profit-calculator/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        crop_name: lastProfitCalculation.crop_name,
+        acreage: lastProfitCalculation.acreage,
+        seed_cost: lastProfitCalculation.costs.seed,
+        fertilizer_cost: lastProfitCalculation.costs.fertilizer,
+        labor_cost: lastProfitCalculation.costs.labor,
+        irrigation_cost: lastProfitCalculation.costs.irrigation,
+        transport_cost: lastProfitCalculation.costs.transport,
+        other_cost: lastProfitCalculation.costs.other,
+        expected_yield_kg: lastProfitCalculation.expected_yield_kg,
+        selling_price_per_kg: lastProfitCalculation.selling_price_per_kg,
+        total_cost: lastProfitCalculation.costs.total_cost,
+        gross_revenue: lastProfitCalculation.financials.gross_revenue,
+        net_profit: lastProfitCalculation.financials.net_profit,
+        notes: `Calculated with ₹${lastProfitCalculation.selling_price_per_kg}/kg selling price`
+      })
+    });
+    if (res.ok) {
+      showToast('Profit calculation record saved!', 'success');
+      loadFarmerProfitHistory();
+    } else {
+      showToast('Could not save record', 'error');
+    }
+  } catch (e) {
+    showToast('Network error saving calculation', 'error');
+  }
+};
+
+window.loadFarmerProfitHistory = async function() {
+  const tbody = document.getElementById('profitHistoryTableBody');
+  if (!tbody) return;
+
+  try {
+    const res = await fetch(`${API_URL}/profit-calculator/history`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const rows = await res.json();
+    if (!rows || rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:16px;">No saved calculations yet. Use the calculator above to plan harvests.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td><strong>${escapeHtml(r.crop_name)}</strong></td>
+        <td>${r.acreage} ac</td>
+        <td>₹${Number(r.total_cost).toLocaleString()}</td>
+        <td>₹${Number(r.gross_revenue).toLocaleString()}</td>
+        <td><strong style="color:${r.net_profit > 0 ? 'var(--primary)' : 'var(--danger)'};">₹${Number(r.net_profit).toLocaleString()}</strong></td>
+        <td>${formatDate(r.created_at)}</td>
+        <td>
+          <button class="danger btn-small" onclick="deleteProfitCalculation(${r.id})">Delete</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:16px; color:var(--danger);">Error loading history.</td></tr>';
+  }
+};
+
+window.deleteProfitCalculation = async function(id) {
+  if (!confirm('Delete this calculation record?')) return;
+  try {
+    const res = await fetch(`${API_URL}/profit-calculator/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      showToast('Record deleted', 'success');
+      loadFarmerProfitHistory();
+    }
+  } catch (e) {
+    showToast('Failed to delete calculation', 'error');
+  }
+};
+
+// ============================================================================
+// VIEW 17: HARVEST & CROP CALENDAR
+// ============================================================================
+window.toggleAddHarvestPlanForm = function() {
+  const card = document.getElementById('addHarvestPlanCard');
+  if (card) {
+    card.style.display = card.style.display === 'none' ? 'block' : 'none';
+  }
+};
+
+window.handleCreateHarvestPlan = async function(e) {
+  e.preventDefault();
+  const payload = {
+    crop_name: document.getElementById('hcCropName').value,
+    category: document.getElementById('hcCategory').value,
+    acreage: document.getElementById('hcAcreage').value,
+    expected_quantity_kg: document.getElementById('hcExpectedQty').value,
+    planting_date: document.getElementById('hcPlantingDate').value || null,
+    expected_harvest_date: document.getElementById('hcExpectedHarvestDate').value,
+    status: document.getElementById('hcStatus').value,
+    notes: document.getElementById('hcNotes').value
+  };
+
+  try {
+    const res = await fetch(`${API_URL}/harvest-calendar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      showToast('Harvest plan registered successfully!', 'success');
+      e.target.reset();
+      toggleAddHarvestPlanForm();
+      loadFarmerHarvestPlans();
+    } else {
+      showToast('Failed to register plan', 'error');
+    }
+  } catch (err) {
+    showToast('Network error saving harvest plan', 'error');
+  }
+};
+
+window.loadFarmerHarvestPlans = async function() {
+  const container = document.getElementById('harvestPlansContainer');
+  if (!container) return;
+
+  try {
+    const res = await fetch(`${API_URL}/harvest-calendar`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const plans = await res.json();
+    if (!plans || plans.length === 0) {
+      container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">No upcoming harvest plans registered. Click "+ Add Harvest Plan" to schedule crops.</div>';
+      return;
+    }
+
+    container.innerHTML = plans.map(p => `
+      <div class="crop-card">
+        <div class="crop-header-row">
+          <strong>${escapeHtml(p.crop_name)}</strong>
+          <span class="harvest-status-chip harvest-status-${p.status}">${p.status.replace(/_/g, ' ')}</span>
+        </div>
+        <div style="margin:8px 0; font-size:13px; color:var(--ink-soft);">
+          <div>Yield Target: <strong>${p.expected_quantity_kg} kg</strong> (${p.acreage || 1} Acres)</div>
+          <div>Harvest Date: <strong style="color:var(--primary);">${formatDate(p.expected_harvest_date)}</strong></div>
+          ${p.planting_date ? `<div style="font-size:12px; color:var(--ink-muted);">Planted: ${formatDate(p.planting_date)}</div>` : ''}
+        </div>
+        ${p.notes ? `<p style="font-size:12px; color:var(--ink-soft); margin:6px 0 14px;">${escapeHtml(p.notes)}</p>` : ''}
+        <div style="display:flex; gap:8px; margin-top:auto;">
+          <button class="danger btn-small" onclick="deleteHarvestPlan(${p.id})">Delete Plan</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Error loading harvest calendar.</div>';
+  }
+};
+
+window.deleteHarvestPlan = async function(id) {
+  if (!confirm('Delete this harvest schedule?')) return;
+  try {
+    const res = await fetch(`${API_URL}/harvest-calendar/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      showToast('Plan deleted', 'success');
+      loadFarmerHarvestPlans();
+    }
+  } catch (e) {
+    showToast('Failed to delete harvest plan', 'error');
+  }
+};
+
+// ============================================================================
+// VIEW 18: MARKETPLACE DEMAND INSIGHTS
+// ============================================================================
+window.loadFarmerDemandInsights = async function() {
+  const advisoryContainer = document.getElementById('demandAdvisoryContainer');
+  const tbody = document.getElementById('topDemandTableBody');
+  if (!advisoryContainer || !tbody) return;
+
+  advisoryContainer.innerHTML = '<div style="text-align:center; padding:20px;"><span class="pulse-dot"></span> Analyzing real buyer searches and marketplace activity...</div>';
+
+  try {
+    const res = await fetch(`${API_URL}/analytics/demand`);
+    const data = await res.json();
+
+    // Render advisory recommendations
+    if (data.advisory_recommendations && data.advisory_recommendations.length > 0) {
+      advisoryContainer.innerHTML = data.advisory_recommendations.map(adv => `
+        <div class="demand-recommendation-card">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <span style="font-size:18px;">💡</span>
+            <strong style="color:var(--primary); font-size:14px;">${escapeHtml(adv.title)}</strong>
+          </div>
+          <p style="margin:0; font-size:13px; color:var(--ink-soft); line-height:1.5;">${escapeHtml(adv.message)}</p>
+        </div>
+      `).join('');
+    } else {
+      advisoryContainer.innerHTML = '';
+    }
+
+    // Render top crops demand table
+    if (data.top_crops && data.top_crops.length > 0) {
+      tbody.innerHTML = data.top_crops.map(c => `
+        <tr>
+          <td><strong>${escapeHtml(c.crop_name)}</strong></td>
+          <td><strong style="color:var(--primary);">${c.demand_signals}</strong></td>
+          <td>${c.search_count}</td>
+          <td>${c.wishlist_count}</td>
+          <td>${c.order_count}</td>
+          <td>${c.available_supply_kg} kg</td>
+          <td>
+            <span class="${c.status.includes('High') ? 'badge-price-deal' : 'badge-price-fair'}">
+              ${c.status}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:16px;">Platform demand data is gathering. Log buyer interactions to see demand signals.</td></tr>';
+    }
+  } catch (e) {
+    advisoryContainer.innerHTML = '<div style="color:var(--ink-soft); padding:16px;">Unable to fetch demand intelligence.</div>';
+  }
+};
+
+// ============================================================================
+// PROFILE VIEW LOCATION & GPS ENHANCEMENTS
+// ============================================================================
+window.detectFarmerGpsLocation = function() {
+  if (!navigator.geolocation) {
+    showToast('Geolocation is not supported by your browser', 'error');
+    return;
+  }
+  showToast('Detecting current GPS coordinates...', 'info');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude.toFixed(4);
+      const lon = pos.coords.longitude.toFixed(4);
+      const latInput = document.getElementById('profileLatInput');
+      const lonInput = document.getElementById('profileLonInput');
+      if (latInput) latInput.value = lat;
+      if (lonInput) lonInput.value = lon;
+      showToast(`GPS Coordinates detected: ${lat}, ${lon}`, 'success');
+    },
+    err => {
+      showToast('Could not acquire GPS: ' + err.message, 'error');
+    },
+    { timeout: 10000, enableHighAccuracy: true }
+  );
+};
+
+window.handleSaveFarmerProfile = async function(e) {
+  e.preventDefault();
+  const payload = {
+    name: document.getElementById('profileNameInput').value.trim(),
+    state: document.getElementById('profileStateInput').value.trim(),
+    district: document.getElementById('profileDistrictInput').value.trim(),
+    village: document.getElementById('profileVillageInput').value.trim(),
+    pincode: document.getElementById('profilePincodeInput').value.trim(),
+    latitude: document.getElementById('profileLatInput').value ? parseFloat(document.getElementById('profileLatInput').value) : null,
+    longitude: document.getElementById('profileLonInput').value ? parseFloat(document.getElementById('profileLonInput').value) : null,
+    experience_years: document.getElementById('profileExpYearsInput').value ? parseInt(document.getElementById('profileExpYearsInput').value, 10) : null,
+    farming_bio: document.getElementById('profileBioInput').value.trim()
+  };
+
+  try {
+    const res = await fetch(`${API_URL}/profile/me`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Profile updated successfully!', 'success');
+      // Update local storage user
+      const updatedUser = { ...user, ...payload };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      const sidebarName = document.getElementById('sidebarUserName');
+      if (sidebarName) sidebarName.textContent = payload.name;
+    } else {
+      showToast(data.error || 'Failed to update profile', 'error');
+    }
+  } catch (err) {
+    showToast('Network error saving profile', 'error');
+  }
+};
+
+// Enhanced loadFarmerProfile
+const originalLoadFarmerProfile = window.loadFarmerProfile;
+window.loadFarmerProfile = async function() {
+  if (typeof originalLoadFarmerProfile === 'function') {
+    originalLoadFarmerProfile();
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/profile/me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const p = await res.json();
+
+    const nameInput = document.getElementById('profileNameInput');
+    const emailInput = document.getElementById('profileEmailInput');
+    const stateInput = document.getElementById('profileStateInput');
+    const distInput = document.getElementById('profileDistrictInput');
+    const villageInput = document.getElementById('profileVillageInput');
+    const pinInput = document.getElementById('profilePincodeInput');
+    const latInput = document.getElementById('profileLatInput');
+    const lonInput = document.getElementById('profileLonInput');
+    const expInput = document.getElementById('profileExpYearsInput');
+    const bioInput = document.getElementById('profileBioInput');
+    const badgeEl = document.getElementById('profileVerificationBadge');
+    const expText = document.getElementById('profileExpYearsText');
+
+    if (nameInput) nameInput.value = p.name || '';
+    if (emailInput) emailInput.value = p.email || '';
+    if (stateInput) stateInput.value = p.state || '';
+    if (distInput) distInput.value = p.district || '';
+    if (villageInput) villageInput.value = p.village || '';
+    if (pinInput) pinInput.value = p.pincode || '';
+    if (latInput) latInput.value = p.latitude || '';
+    if (lonInput) lonInput.value = p.longitude || '';
+    if (expInput) expInput.value = p.experience_years || '';
+    if (bioInput) bioInput.value = p.farming_bio || '';
+
+    if (badgeEl) {
+      badgeEl.textContent = p.is_verified ? '✓ Verified Producer' : 'Pending Verification';
+      badgeEl.className = p.is_verified ? 'badge-verified' : 'badge-price-neutral';
+    }
+
+    if (expText && p.experience_years) {
+      expText.textContent = `${p.experience_years}+ Years Farming`;
+    }
+  } catch (e) {
+    console.warn('loadFarmerProfile fetch error:', e.message);
+  }
+};

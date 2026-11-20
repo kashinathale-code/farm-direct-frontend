@@ -175,6 +175,49 @@
             </span>
             <span class="nav-item-label" data-i18n="nav.traceability">Crop Traceability</span>
           </button>
+
+          <button class="nav-item" id="navMarketPrices" data-tooltip="APMC Mandi Prices" onclick="showSection('marketPricesView', 'Live APMC Mandi Prices', 'navMarketPrices')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18M7 16l4-4 4 4 5-6"/>
+              </svg>
+            </span>
+            <span class="nav-item-label" data-i18n="nav.market_prices">Mandi Prices</span>
+          </button>
+
+          <button class="nav-item" id="navProfitCalc" data-tooltip="Cost & Profit Calculator" onclick="showSection('profitCalcView', 'Farmer Cost & Profit Calculator', 'navProfitCalc')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+                <line x1="8" y1="6" x2="16" y2="6"></line>
+                <line x1="16" y1="14" x2="16" y2="18"></line>
+                <path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"></path>
+              </svg>
+            </span>
+            <span class="nav-item-label" data-i18n="nav.profit_calc">Profit Calculator</span>
+          </button>
+
+          <button class="nav-item" id="navHarvestCalendar" data-tooltip="Harvest Calendar" onclick="showSection('harvestCalendarView', 'Harvest & Crop Planning Calendar', 'navHarvestCalendar')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </span>
+            <span class="nav-item-label" data-i18n="nav.harvest_calendar">Harvest Calendar</span>
+          </button>
+
+          <button class="nav-item" id="navDemandInsights" data-tooltip="Buyer Demand Insights" onclick="showSection('demandInsightsView', 'Marketplace Demand Insights', 'navDemandInsights')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+              </svg>
+            </span>
+            <span class="nav-item-label" data-i18n="nav.demand_insights">Demand Insights</span>
+          </button>
         </div>
 
         <!-- ACCOUNT SECTION -->
@@ -509,13 +552,32 @@
               <div class="form-grid-2">
                 <div class="input-group">
                   <label class="field-label" for="price">Listing Price per kg (₹) *</label>
-                  <input type="number" id="price" placeholder="e.g. ₹45" min="1" step="0.5" required>
+                  <input type="number" id="price" placeholder="e.g. ₹45" min="1" step="0.5" required oninput="checkFarmerMandiBenchmarkPreview()">
+                  <div id="addCropMandiPreview" style="margin-top:6px; font-size:12px; color:var(--ink-soft); display:none;"></div>
                 </div>
 
                 <div class="input-group">
                   <label class="field-label" for="quantity">Available Quantity (kg) *</label>
                   <input type="number" id="quantity" placeholder="e.g. 150 kg" min="1" required>
                 </div>
+              </div>
+
+              <!-- Tiered Bulk Wholesale Pricing -->
+              <div class="form-field-full" style="background:var(--bg-app); border:1px solid var(--border); padding:16px; border-radius:var(--radius-md);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <div>
+                    <strong>📦 Tiered Bulk Pricing (Optional)</strong>
+                    <p style="font-size:12px; color:var(--ink-soft); margin:2px 0 0;">Offer automated volume discounts to institutional & wholesale buyers.</p>
+                  </div>
+                  <button type="button" class="btn-secondary btn-small" onclick="addBulkTierRow()">+ Add Tier</button>
+                </div>
+                <div id="bulkTierList" style="display:flex; flex-direction:column; gap:8px;"></div>
+              </div>
+
+              <!-- Batch ID -->
+              <div class="input-group">
+                <label class="field-label" for="addCropBatchId">Batch Identifier (Optional)</label>
+                <input type="text" id="addCropBatchId" placeholder="Leave empty for auto-generated lot ID">
               </div>
 
               <!-- Buyer Negotiation / Bidding Settings -->
@@ -705,27 +767,82 @@
             </div>
           </div>
 
-          <div class="card-box" style="max-width: 640px;">
+          <div class="card-box" style="max-width: 680px;">
             <div style="display:flex; align-items:center; gap:18px; margin-bottom:24px;">
               <div class="user-avatar farmer" style="width:64px; height:64px; font-size:24px;" id="profileLargeAvatar">FD</div>
               <div>
                 <h3 style="margin:0;" id="profileFarmerName">Farmer Name</h3>
-                <span class="status-tag status-active" style="margin-top:4px;">VERIFIED FARMER</span>
+                <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+                  <span class="badge-verified" id="profileVerificationBadge">✓ Verified Producer</span>
+                  <span style="font-size:12px; color:var(--ink-muted);" id="profileExpYearsText">5+ Years Farming</span>
+                </div>
               </div>
             </div>
 
-            <div class="trace-grid-stats" style="margin-bottom:20px;">
-              <div class="trace-stat-box">
-                <span class="trace-stat-label">Email Address</span>
-                <strong class="trace-stat-val" id="profileEmail" style="font-size:14px;">-</strong>
+            <!-- Profile Edit Form -->
+            <form id="farmerProfileForm" onsubmit="handleSaveFarmerProfile(event)">
+              <div class="form-grid-2">
+                <div class="input-group">
+                  <label class="field-label" for="profileNameInput">Full Name</label>
+                  <input type="text" id="profileNameInput" required>
+                </div>
+                <div class="input-group">
+                  <label class="field-label" for="profileEmailInput">Email Address</label>
+                  <input type="email" id="profileEmailInput" readonly style="background:var(--bg-app); cursor:not-allowed;">
+                </div>
               </div>
-              <div class="trace-stat-box">
-                <span class="trace-stat-label">Farm Location</span>
-                <strong class="trace-stat-val" id="profileLocation" style="font-size:14px;">-</strong>
-              </div>
-            </div>
 
-            <div class="trace-notes-box">
+              <div class="form-grid-2">
+                <div class="input-group">
+                  <label class="field-label" for="profileStateInput">State</label>
+                  <input type="text" id="profileStateInput" placeholder="e.g. Maharashtra">
+                </div>
+                <div class="input-group">
+                  <label class="field-label" for="profileDistrictInput">District</label>
+                  <input type="text" id="profileDistrictInput" placeholder="e.g. Pune, Nashik">
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="input-group">
+                  <label class="field-label" for="profileVillageInput">Village / Tehsil</label>
+                  <input type="text" id="profileVillageInput" placeholder="e.g. Baramati">
+                </div>
+                <div class="input-group">
+                  <label class="field-label" for="profilePincodeInput">PIN Code</label>
+                  <input type="text" id="profilePincodeInput" placeholder="e.g. 413102">
+                </div>
+              </div>
+
+              <!-- GPS Geolocation Section -->
+              <div style="background:var(--bg-app); border:1px solid var(--border); padding:14px; border-radius:var(--radius-md); margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <label class="field-label" style="margin:0;">Farm GPS Coordinates (For Distance Matching)</label>
+                  <button type="button" class="btn-secondary btn-small" onclick="detectFarmerGpsLocation()">📍 Detect GPS</button>
+                </div>
+                <div class="form-grid-2">
+                  <input type="number" id="profileLatInput" placeholder="Latitude (e.g. 18.5204)" step="0.0001">
+                  <input type="number" id="profileLonInput" placeholder="Longitude (e.g. 73.8567)" step="0.0001">
+                </div>
+                <span style="font-size:11.5px; color:var(--ink-muted); display:block; margin-top:4px;">Helps local buyers calculate driving distance and find nearby fresh harvests.</span>
+              </div>
+
+              <div class="input-group">
+                <label class="field-label" for="profileExpYearsInput">Farming Experience (Years)</label>
+                <input type="number" id="profileExpYearsInput" min="0" placeholder="e.g. 10">
+              </div>
+
+              <div class="input-group">
+                <label class="field-label" for="profileBioInput">Farming Bio & Natural Cultivation Practices</label>
+                <textarea id="profileBioInput" rows="3" placeholder="Tell buyers about your crop specializations, soil health practices, and certifications..."></textarea>
+              </div>
+
+              <div style="margin-top:20px;">
+                <button type="submit" class="btn-primary" style="width:auto; padding:10px 24px;">💾 Update Profile</button>
+              </div>
+            </form>
+
+            <div class="trace-notes-box" style="margin-top:24px;">
               <h3>Producer ID & Direct Sales Policy</h3>
               <p>Your listings are published with 0% intermediary commission. Payment settlements and fulfillment coordination occur directly between you and verified buyers.</p>
             </div>
@@ -813,7 +930,309 @@
           </div>
         </section>
 
+        <!-- ================================================================
+             VIEW 15: APMC MANDI MARKET PRICES
+             ================================================================ -->
+        <section id="marketPricesView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>Live APMC Mandi Market Rates</h2>
+              <p>Authentic Government Agmarknet benchmark prices. Compare modal rates per kg against your listing prices.</p>
+            </div>
+            <button class="btn-secondary btn-small" onclick="loadFarmerMandiPrices()">🔄 Refresh Rates</button>
+          </div>
+
+          <div class="card-box" style="margin-bottom:20px;">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; align-items:flex-end;">
+              <div>
+                <label class="field-label" for="farmerMandiCommodity">Commodity</label>
+                <select id="farmerMandiCommodity" onchange="filterFarmerMandiPrices()">
+                  <option value="">All Crops</option>
+                  <option value="Onion">Onion</option>
+                  <option value="Tomato">Tomato</option>
+                  <option value="Potato">Potato</option>
+                  <option value="Wheat">Wheat</option>
+                  <option value="Rice">Rice</option>
+                  <option value="Cotton">Cotton</option>
+                  <option value="Soybean">Soybean</option>
+                  <option value="Gram (Chana)">Gram (Chana)</option>
+                  <option value="Mustard">Mustard</option>
+                  <option value="Mango">Mango</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label" for="farmerMandiState">State</label>
+                <select id="farmerMandiState" onchange="filterFarmerMandiPrices()">
+                  <option value="">All States</option>
+                  <option value="Maharashtra">Maharashtra</option>
+                  <option value="Madhya Pradesh">Madhya Pradesh</option>
+                  <option value="Gujarat">Gujarat</option>
+                  <option value="Punjab">Punjab</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label" for="farmerMandiDistrict">District</label>
+                <input type="text" id="farmerMandiDistrict" placeholder="e.g. Pune, Nashik" oninput="filterFarmerMandiPrices()">
+              </div>
+            </div>
+          </div>
+
+          <div class="mandi-card-grid" id="farmerMandiGrid">
+            <div style="grid-column:1/-1; text-align:center; padding:30px;">Loading live APMC market data...</div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 16: FARMER COST & PROFIT CALCULATOR
+             ================================================================ -->
+        <section id="profitCalcView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>Agricultural Cost & Net Profit Calculator</h2>
+              <p>Calculate your exact cost of cultivation, breakeven rate, net profit, ROI, and direct sales advantage over mandi commissions.</p>
+            </div>
+          </div>
+
+          <div class="profit-calc-grid">
+            <!-- Form Card -->
+            <div class="card-box">
+              <h3 style="margin-top:0;">Input Cultivation Costs</h3>
+              <form id="profitCalculatorForm" onsubmit="handleCalculateProfit(event)">
+                <div class="form-grid-2">
+                  <div class="input-group">
+                    <label class="field-label" for="pcCropName">Crop Name *</label>
+                    <input type="text" id="pcCropName" placeholder="e.g. Onion" required>
+                  </div>
+                  <div class="input-group">
+                    <label class="field-label" for="pcAcreage">Acreage (Acres)</label>
+                    <input type="number" id="pcAcreage" value="1" min="0.1" step="0.1">
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="input-group">
+                    <label class="field-label" for="pcSeedCost">Seed / Sapling Cost (₹)</label>
+                    <input type="number" id="pcSeedCost" placeholder="0" min="0">
+                  </div>
+                  <div class="input-group">
+                    <label class="field-label" for="pcFertCost">Fertilizer & Pesticide (₹)</label>
+                    <input type="number" id="pcFertCost" placeholder="0" min="0">
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="input-group">
+                    <label class="field-label" for="pcLaborCost">Labor Cost (₹)</label>
+                    <input type="number" id="pcLaborCost" placeholder="0" min="0">
+                  </div>
+                  <div class="input-group">
+                    <label class="field-label" for="pcIrrigCost">Irrigation & Power (₹)</label>
+                    <input type="number" id="pcIrrigCost" placeholder="0" min="0">
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="input-group">
+                    <label class="field-label" for="pcTransCost">Transport & Packaging (₹)</label>
+                    <input type="number" id="pcTransCost" placeholder="0" min="0">
+                  </div>
+                  <div class="input-group">
+                    <label class="field-label" for="pcOtherCost">Other Machinery / Misc (₹)</label>
+                    <input type="number" id="pcOtherCost" placeholder="0" min="0">
+                  </div>
+                </div>
+
+                <hr style="border:none; border-top:1px solid var(--border); margin:14px 0;">
+
+                <div class="form-grid-2">
+                  <div class="input-group">
+                    <label class="field-label" for="pcYieldKg">Expected Harvest Yield (kg) *</label>
+                    <input type="number" id="pcYieldKg" placeholder="e.g. 5000" min="1" required>
+                  </div>
+                  <div class="input-group">
+                    <label class="field-label" for="pcSellPrice">Selling Price (₹/kg) *</label>
+                    <input type="number" id="pcSellPrice" placeholder="e.g. 25" min="1" step="0.5" required>
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                  <button type="submit" class="btn-primary" style="flex:1;">⚡ Calculate Profit & Margins</button>
+                  <button type="button" class="btn-secondary" onclick="saveCurrentProfitCalculation()" id="saveCalcBtn" style="display:none;">💾 Save Record</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Results Card -->
+            <div class="profit-result-box" id="profitResultsContainer">
+              <div style="text-align:center; padding:40px 20px; color:var(--ink-soft);">
+                <div style="font-size:36px; margin-bottom:12px;">📊</div>
+                <h3>Enter your costs and click Calculate</h3>
+                <p style="font-size:13px;">View your net earnings, ROI percentage, breakeven price per kg, and direct platform advantage over mandi middleman commissions.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Saved Calculations History -->
+          <div class="card-box" style="margin-top:24px;">
+            <h3>Saved Profit Calculation Records</h3>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Crop</th>
+                    <th>Acreage</th>
+                    <th>Total Cost</th>
+                    <th>Gross Revenue</th>
+                    <th>Net Profit</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="profitHistoryTableBody">
+                  <tr><td colspan="7" style="text-align:center; padding:16px;">No saved calculations yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 17: HARVEST & CROP CALENDAR
+             ================================================================ -->
+        <section id="harvestCalendarView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>Harvest & Crop Planning Calendar</h2>
+              <p>Plan upcoming harvests, track growth phases, and publish advance availability forecasts to buyers.</p>
+            </div>
+            <button class="btn-primary btn-small" onclick="toggleAddHarvestPlanForm()">+ Add Harvest Plan</button>
+          </div>
+
+          <!-- Add Harvest Plan Form Card -->
+          <div class="card-box" id="addHarvestPlanCard" style="display:none; margin-bottom:24px;">
+            <h3 style="margin-top:0;">Register Upcoming Harvest Schedule</h3>
+            <form id="addHarvestPlanForm" onsubmit="handleCreateHarvestPlan(event)">
+              <div class="form-grid-2">
+                <div class="input-group">
+                  <label class="field-label" for="hcCropName">Crop Name *</label>
+                  <input type="text" id="hcCropName" placeholder="e.g. Cauliflower" required>
+                </div>
+                <div class="input-group">
+                  <label class="field-label" for="hcCategory">Category</label>
+                  <select id="hcCategory">
+                    <option value="Vegetables">Vegetables</option>
+                    <option value="Fruits">Fruits</option>
+                    <option value="Grains">Grains</option>
+                    <option value="Pulses">Pulses</option>
+                    <option value="Spices">Spices</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="input-group">
+                  <label class="field-label" for="hcAcreage">Acreage Cultivated (Acres)</label>
+                  <input type="number" id="hcAcreage" placeholder="e.g. 2.5" min="0.1" step="0.1">
+                </div>
+                <div class="input-group">
+                  <label class="field-label" for="hcExpectedQty">Expected Yield Volume (kg) *</label>
+                  <input type="number" id="hcExpectedQty" placeholder="e.g. 3000" min="1" required>
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="input-group">
+                  <label class="field-label" for="hcPlantingDate">Planting Date</label>
+                  <input type="date" id="hcPlantingDate">
+                </div>
+                <div class="input-group">
+                  <label class="field-label" for="hcExpectedHarvestDate">Expected Harvest Date *</label>
+                  <input type="date" id="hcExpectedHarvestDate" required>
+                </div>
+              </div>
+
+              <div class="input-group">
+                <label class="field-label" for="hcStatus">Current Growth Stage</label>
+                <select id="hcStatus">
+                  <option value="planted">Just Planted (Germination)</option>
+                  <option value="growing" selected>Growing (Vegetative / Flowering)</option>
+                  <option value="ready_for_harvest">Ready for Harvest in 7-14 Days</option>
+                </select>
+              </div>
+
+              <div class="input-group">
+                <label class="field-label" for="hcNotes">Notes / Soil / Organic Practice</label>
+                <textarea id="hcNotes" placeholder="e.g. Drip irrigation, zero chemical spray..."></textarea>
+              </div>
+
+              <div style="display:flex; gap:10px; margin-top:16px;">
+                <button type="submit" class="btn-primary" style="width:auto; padding:10px 24px;">Save Plan</button>
+                <button type="button" class="btn-secondary" onclick="toggleAddHarvestPlanForm()" style="width:auto;">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Harvest Plans Grid -->
+          <div class="crops-grid" id="harvestPlansContainer">
+            <div style="grid-column:1/-1; text-align:center; padding:30px;">Loading harvest calendar...</div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 18: MARKETPLACE DEMAND INSIGHTS
+             ================================================================ -->
+        <section id="demandInsightsView" class="page-view">
+          <div class="section-title-row">
+            <div>
+              <h2>Marketplace Buyer Demand Intelligence</h2>
+              <p>Aggregated real-time insights from buyer search inquiries, orders, and wishlist activity. Use this data to harvest and price strategically.</p>
+            </div>
+            <button class="btn-secondary btn-small" onclick="loadFarmerDemandInsights()">🔄 Refresh Insights</button>
+          </div>
+
+          <!-- Advisory Callouts -->
+          <div id="demandAdvisoryContainer" style="margin-bottom:24px;">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <!-- Demand Summary Grid -->
+          <div class="card-box" style="margin-bottom:24px;">
+            <h3 style="margin-top:0;">Top Demanded Commodities (Last 30 Days)</h3>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Commodity</th>
+                    <th>Demand Signals</th>
+                    <th>Buyer Searches</th>
+                    <th>Wishlists</th>
+                    <th>Orders</th>
+                    <th>Available Stock</th>
+                    <th>Supply-Demand Status</th>
+                  </tr>
+                </thead>
+                <tbody id="topDemandTableBody">
+                  <tr><td colspan="7" style="text-align:center; padding:16px;">Loading demand intelligence...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
       </main>
+
+      <!-- Compact Dashboard Footer -->
+      <footer class="dashboard-footer">
+        <div>
+          <span>© 2026 Farm Direct Inc. · Farmer Console</span>
+        </div>
+        <div style="display:flex; gap:16px;">
+          <a href="market-prices.html" target="_blank">Live Mandi Prices</a>
+          <a href="traceability.html" target="_blank">Traceability Portal</a>
+          <span style="color:var(--primary); font-weight:600;">● Network Connected</span>
+        </div>
+      </footer>
     </div>
   </div>
 

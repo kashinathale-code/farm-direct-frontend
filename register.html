@@ -9,6 +9,29 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="auth-page">
+  <!-- Compact Auth Header -->
+  <header class="auth-compact-header">
+    <div class="auth-compact-container">
+      <a href="index.html" class="brand-link">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/>
+            <path d="M7 13c3 0 7-2 9-8-2 6-4 9-9 9z"/>
+            <path d="M12 22V12"/>
+          </svg>
+        </div>
+        <div class="brand-meta">
+          <span class="brand-title">Farm Direct</span>
+          <span class="brand-tagline" data-i18n="footer.tagline">Fair Agricultural Trade</span>
+        </div>
+      </a>
+      <div class="auth-compact-actions">
+        <a href="index.html" class="nav-link" data-i18n="common.home">Home</a>
+        <a href="login.html" class="nav-button" data-i18n="landing.login_btn">Log In</a>
+      </div>
+    </div>
+  </header>
+
   <div class="auth-card" style="max-width: 480px;">
     <div class="auth-header">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
@@ -18,10 +41,10 @@
         </a>
         <div class="lang-selector-wrap">
           <svg class="lang-globe-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-          <select class="lang-selector" id="languageSelect" aria-label="Select Language">
+          <select class="fd-language-selector" id="languageSelect" aria-label="Select Language" onchange="FD_I18N.setLanguage(this.value)">
             <option value="en">English</option>
-            <option value="hi">हिन्दी</option>
-            <option value="mr">मराठी</option>
+            <option value="hi">हिन्दी (Hindi)</option>
+            <option value="mr">मराठी (Marathi)</option>
           </select>
         </div>
       </div>
@@ -85,6 +108,18 @@
       </p>
     </form>
   </div>
+
+  <footer class="auth-compact-footer">
+    <div class="auth-footer-content">
+      <span data-i18n="footer.copyright">© 2026 Farm Direct. All Rights Reserved.</span>
+      <span class="footer-sep">·</span>
+      <a href="index.html" data-i18n="common.home">Home</a>
+      <span class="footer-sep">·</span>
+      <a href="index.html#marketplace" data-i18n="landing.marketplace">Marketplace</a>
+      <span class="footer-sep">·</span>
+      <a href="traceability.html" data-i18n="footer.crop_traceability">Traceability</a>
+    </div>
+  </footer>
 
   <script src="config.js"></script>
   <script src="ui.js"></script>
