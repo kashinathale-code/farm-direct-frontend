@@ -30,8 +30,8 @@
   --border-focus: #2E7D32;
   
   /* Text & Inks */
-  --ink: #19211D;                 /* Dark charcoal */
-  --ink-soft: #55655D;            /* Muted gray secondary */
+  --ink: #1F2937;                 /* Dark charcoal per design spec */
+  --ink-soft: #6B7280;            /* Muted secondary gray per design spec */
   --ink-muted: #8A9A90;           /* Subtle tertiary */
   --ink-inverted: #FFFFFF;
   

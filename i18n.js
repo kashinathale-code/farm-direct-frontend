@@ -88,7 +88,9 @@ const FD_I18N = (function () {
       // Landing Page
       'landing.hero_badge': 'Direct-to-Consumer Agriculture',
       'landing.hero_title': 'Fresh from the farm, directly to your doorstep.',
-      'landing.hero_subtitle': 'We connect local agricultural growers directly with consumers, restaurants, and wholesale buyers. Zero intermediary commissions, 100% price transparency, and verified harvest origin.',
+      'landing.hero_subtitle': 'Connect directly with farmers, discover fresh produce, compare agricultural market prices and support a fairer agricultural marketplace.',
+      'landing.browse_crops': 'Browse Crops',
+      'landing.start_selling': 'Start Selling',
       'landing.search_placeholder': 'Search fresh crops (e.g. Alphonso Mangoes, Tomatoes, Basmati Rice)...',
       'landing.browse_produce': 'Browse Produce',
       'landing.sell_crops': 'Start Selling as Farmer',
@@ -395,7 +397,9 @@ const FD_I18N = (function () {
       // Landing Page
       'landing.hero_badge': 'खेत से सीधे उपभोक्ता तक कृषि',
       'landing.hero_title': 'खेतों से ताज़ा उपज, सीधे आपके द्वार तक।',
-      'landing.hero_subtitle': 'हम स्थानीय किसानों को उपभोक्ताओं, रेस्तरां और थोक खरीदारों से सीधे जोड़ते हैं। शून्य दलाली कमीशन, 100% मूल्य पारदर्शिता और सत्यापित फसल स्रोत।',
+      'landing.hero_subtitle': 'किसानों से सीधे जुड़ें, ताज़ा उपज खोजें, कृषि मंडी भावों की तुलना करें और अधिक न्यायसंगत कृषि बाज़ार का समर्थन करें।',
+      'landing.browse_crops': 'फसलें देखें',
+      'landing.start_selling': 'बेचना शुरू करें',
       'landing.search_placeholder': 'ताज़ा फसलें खोजें (जैसे गेहूं, टमाटर, बासमती चावल, आम)...',
       'landing.browse_produce': 'उपज देखें',
       'landing.sell_crops': 'किसान के रूप में बेचना शुरू करें',
@@ -702,7 +706,9 @@ const FD_I18N = (function () {
       // Landing Page
       'landing.hero_badge': 'शेतकऱ्यांकडून थेट ग्राहकांपर्यंत',
       'landing.hero_title': 'शेतातून थेट तुमच्या दारापर्यंत, १००% ताजी पिके.',
-      'landing.hero_subtitle': 'स्थानिक शेतकरी आणि ग्राहक, हॉटेल व्यावसायिक व घाऊक खरेदीदारांना जोडणारे व्यासपीठ. शून्य दलाली, १००% पारदर्शक भाव आणि अस्सल मूळ शेतकरी खात्री.',
+      'landing.hero_subtitle': 'शेतकऱ्यांशी थेट जोडा, ताजी कृषी उत्पादने शोधा, बाजारभावाची तुलना करा आणि अधिक न्याय्य कृषी बाजारपेठेला पाठबळ द्या.',
+      'landing.browse_crops': 'पिके पहा',
+      'landing.start_selling': 'विक्री सुरू करा',
       'landing.search_placeholder': 'ताजी पिके शोधा (उदा. हापूस आंबा, टोमॅटो, कांदा, तांदूळ)...',
       'landing.browse_produce': 'शेतीमाल पहा',
       'landing.sell_crops': 'शेतकरी म्हणून विक्री सुरू करा',

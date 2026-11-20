@@ -332,6 +332,86 @@
       </div>
     </div>
 
+    <!-- Multi-Mandi Comparison Matrix -->
+    <div class="card-box" style="margin-top:36px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-xl); padding:28px; box-shadow:var(--shadow-sm);">
+      <div class="section-title-row" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
+        <div>
+          <h2 style="font-size:1.35rem; font-weight:800; margin:0 0 6px;">Compare Mandis for a Commodity</h2>
+          <p style="color:var(--ink-soft); font-size:13.5px; margin:0;">Compare wholesale prices across different APMC mandis to identify arbitrage and best selling corridors.</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <label for="compareCommoditySelect" style="font-size:13px; font-weight:600; color:var(--ink);">Crop:</label>
+          <select id="compareCommoditySelect" style="height:38px; padding:0 12px; border-radius:var(--radius-md); border:1px solid var(--border); font-family:inherit; font-size:13.5px;" onchange="loadMandiComparison()">
+            <option value="Onion">Onion (कांदा)</option>
+            <option value="Tomato">Tomato (टोमॅटो)</option>
+            <option value="Potato">Potato (बटाटा)</option>
+            <option value="Wheat">Wheat (गहू)</option>
+            <option value="Rice">Rice (तांदूळ)</option>
+            <option value="Cotton">Cotton (कापूस)</option>
+            <option value="Soybean">Soybean (सोयाबीन)</option>
+            <option value="Gram (Chana)">Gram / Chana (हरभरा)</option>
+            <option value="Mustard">Mustard (मोहरी)</option>
+            <option value="Mango">Mango (आंबा)</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="compareSummaryBadge" style="margin-bottom:16px; padding:12px 16px; background:var(--primary-subtle); border-radius:var(--radius-md); font-size:13px; color:var(--primary); font-weight:600; display:none;"></div>
+
+      <div class="table-responsive">
+        <table class="data-table" id="compareTable">
+          <thead>
+            <tr>
+              <th>APMC Market Name</th>
+              <th>District & State</th>
+              <th>Min Price (₹/Qtl)</th>
+              <th>Max Price (₹/Qtl)</th>
+              <th>Modal Wholesale (₹/kg)</th>
+              <th>Arrival Qty</th>
+              <th>Market Date</th>
+            </tr>
+          </thead>
+          <tbody id="compareTableBody">
+            <tr><td colspan="7" style="text-align:center; padding:18px; color:var(--ink-soft);">Select a commodity above to compare markets.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Nearby APMC Mandi Finder -->
+    <div class="card-box" style="margin-top:36px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-xl); padding:28px; box-shadow:var(--shadow-sm);">
+      <div class="section-title-row" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
+        <div>
+          <h2 style="font-size:1.35rem; font-weight:800; margin:0 0 6px;">Nearby APMC Mandi Finder</h2>
+          <p style="color:var(--ink-soft); font-size:13.5px; margin:0;">Locate agricultural produce markets nearest to your farming location or district with real distance calculations.</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <button class="btn-primary" style="height:38px; padding:0 14px; font-size:13px;" onclick="detectUserLocationForMandi()">📍 Use My GPS</button>
+          <select id="nearbyDistrictSelect" style="height:38px; padding:0 12px; border-radius:var(--radius-md); border:1px solid var(--border); font-family:inherit; font-size:13.5px;" onchange="loadNearbyByDistrict(this.value)">
+            <option value="">Or Select District</option>
+            <option value="Pune">Pune</option>
+            <option value="Nashik">Nashik</option>
+            <option value="Ahmednagar">Ahmednagar</option>
+            <option value="Nagpur">Nagpur</option>
+            <option value="Latur">Latur</option>
+            <option value="Ratnagiri">Ratnagiri</option>
+            <option value="Surat">Surat</option>
+            <option value="Rajkot">Rajkot</option>
+            <option value="Indore">Indore</option>
+            <option value="Ujjain">Ujjain</option>
+            <option value="Jaipur">Jaipur</option>
+            <option value="Karnal">Karnal</option>
+            <option value="Ludhiana">Ludhiana</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="nearbyMandiStatus" style="font-size:13px; color:var(--ink-soft); margin-bottom:14px;"></div>
+      <div class="mandi-card-grid" id="nearbyMandiGrid" style="margin-bottom:0;">
+        <div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-soft);">Click "Use My GPS" or select your district to discover nearby APMC markets.</div>
+      </div>
+    </div>
+
     <!-- Explanatory Direct Trade Callout -->
     <div style="margin-top:40px; background:linear-gradient(135deg, #F0FDF4, #DCFCE7); border:1px solid #BBF7D0; border-radius:var(--radius-xl); padding:32px; display:flex; flex-direction:column; gap:12px;">
       <div style="display:flex; align-items:center; gap:10px;">
@@ -513,7 +593,144 @@
       renderPrices(allPrices);
     }
 
-    document.addEventListener('DOMContentLoaded', loadMarketPrices);
+    // Multi-Mandi Comparison Logic
+    async function loadMandiComparison() {
+      const comm = document.getElementById('compareCommoditySelect').value;
+      const tbody = document.getElementById('compareTableBody');
+      const badge = document.getElementById('compareSummaryBadge');
+
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px;">Comparing mandis across regions...</td></tr>';
+      
+      try {
+        const res = await fetch(`${API_BASE_URL}/market-prices/compare?commodity=${encodeURIComponent(comm)}`);
+        if (!res.ok) throw new Error('Failed to fetch comparison');
+        const data = await res.json();
+
+        if (!data.markets || data.markets.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:18px; color:var(--ink-soft);">No comparative mandi entries found for ${comm}.</td></tr>`;
+          if (badge) badge.style.display = 'none';
+          return;
+        }
+
+        if (badge) {
+          badge.style.display = 'block';
+          badge.innerHTML = `📊 <strong>${comm} Comparison Summary:</strong> Average Modal Rate: ₹${data.average_modal_per_kg}/kg (Min: ₹${data.overall_min_per_kg}/kg in ${data.lowest_market}, Max: ₹${data.overall_max_per_kg}/kg in ${data.highest_market}). Price spread: ₹${data.price_spread_per_kg}/kg.`;
+        }
+
+        tbody.innerHTML = data.markets.map(m => {
+          const diff = m.difference_from_average_pct;
+          const diffBadge = diff > 0 
+            ? `<span style="color:#047857; font-weight:700;">+${diff}% vs avg</span>`
+            : diff < 0 
+              ? `<span style="color:#B91C1C; font-weight:700;">${diff}% vs avg</span>`
+              : `<span style="color:var(--ink-soft);">Equal to avg</span>`;
+
+          return `
+            <tr>
+              <td><strong>${m.market_name}</strong></td>
+              <td>${m.district}, ${m.state}</td>
+              <td>₹${m.min_price}</td>
+              <td>₹${m.max_price}</td>
+              <td>
+                <strong style="color:var(--primary); font-size:14.5px;">₹${m.modal_price_per_kg}</strong>
+                <div style="font-size:11.5px;">${diffBadge}</div>
+              </td>
+              <td>${m.arrival_qty || 0} Qtl</td>
+              <td>${m.arrival_date || 'Today'}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('loadMandiComparison error:', err);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:18px; color:var(--ink-soft);">Unable to load comparison data.</td></tr>';
+      }
+    }
+
+    // Nearby Mandi Finder with Geolocation & District Fallback
+    function detectUserLocationForMandi() {
+      const statusEl = document.getElementById('nearbyMandiStatus');
+      if (!navigator.geolocation) {
+        if (statusEl) statusEl.textContent = 'Geolocation is not supported by your browser. Please select a district from the dropdown.';
+        return;
+      }
+      if (statusEl) statusEl.textContent = 'Requesting GPS coordinates (with your permission)...';
+
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          if (statusEl) statusEl.textContent = `GPS detected: Latitude ${lat.toFixed(3)}, Longitude ${lon.toFixed(3)}. Fetching nearest mandis...`;
+          fetchNearbyMandis({ lat, lon });
+        },
+        err => {
+          if (statusEl) statusEl.textContent = 'GPS access denied or unavailable. Please select your district from the dropdown.';
+        },
+        { timeout: 10000 }
+      );
+    }
+
+    function loadNearbyByDistrict(district) {
+      if (!district) return;
+      const statusEl = document.getElementById('nearbyMandiStatus');
+      if (statusEl) statusEl.textContent = `Searching APMC mandis within and surrounding ${district} district...`;
+      fetchNearbyMandis({ district });
+    }
+
+    async function fetchNearbyMandis({ lat, lon, district }) {
+      const grid = document.getElementById('nearbyMandiGrid');
+      grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-soft);">Calculating distances and finding nearest agricultural markets...</div>';
+
+      try {
+        let url = `${API_BASE_URL}/market-prices/nearby?`;
+        if (lat && lon) url += `lat=${lat}&lon=${lon}&radius=150`;
+        else if (district) url += `district=${encodeURIComponent(district)}&radius=150`;
+
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Nearby API failed');
+        const markets = await res.json();
+
+        if (!markets || markets.length === 0) {
+          grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-soft);">No APMC mandis found in this radius. Try selecting another district.</div>';
+          return;
+        }
+
+        grid.innerHTML = markets.map(m => `
+          <div class="mandi-card" style="border-left: 4px solid var(--primary);">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                <span class="mandi-badge">📍 ${m.market_name}</span>
+                ${m.distance_km != null ? `<span style="font-size:12px; font-weight:800; color:var(--secondary); background:var(--secondary-subtle); padding:2px 8px; border-radius:999px;">${m.distance_km} km away</span>` : ''}
+              </div>
+              <h3 style="font-size:1.2rem; font-weight:800; margin:6px 0 2px;">${m.commodity}</h3>
+              <span style="font-size:12px; color:var(--ink-soft);">${m.district}, ${m.state} | ${m.variety || 'FAQ'}</span>
+
+              <div class="mandi-price-display" style="margin:12px 0;">
+                <div>
+                  <span style="font-size:11px; text-transform:uppercase; color:var(--ink-muted); font-weight:700; display:block;">Modal Rate</span>
+                  <span style="font-size:1.3rem; font-weight:800; color:var(--primary);">₹${m.modal_price_per_kg}/kg</span>
+                </div>
+                <div style="text-align:right;">
+                  <span style="font-size:11px; color:var(--ink-muted); display:block;">Mandi Benchmark</span>
+                  <strong style="font-size:13px; color:var(--ink);">₹${m.modal_price}/Qtl</strong>
+                </div>
+              </div>
+            </div>
+            <div style="font-size:11.5px; color:var(--ink-muted); display:flex; justify-content:space-between;">
+              <span>Updated: ${m.arrival_date || 'Today'}</span>
+              <span>Source: Agmarknet</span>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('fetchNearbyMandis error:', err);
+        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:24px; color:var(--ink-soft);">Unable to retrieve nearby markets right now.</div>';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadMarketPrices();
+      loadMandiComparison();
+    });
   </script>
 </body>
 </html>

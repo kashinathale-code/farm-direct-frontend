@@ -133,7 +133,7 @@
         </div>
         <h1 data-i18n="landing.hero_title">Fresh from the farm, directly to your doorstep.</h1>
         <p class="hero-subtitle" data-i18n="landing.hero_subtitle">
-          We connect local agricultural growers directly with consumers, restaurants, and wholesale buyers. Zero intermediary commissions, 100% price transparency, and verified harvest origin.
+          Connect directly with farmers, discover fresh produce, compare agricultural market prices and support a fairer agricultural marketplace.
         </p>
 
         <!-- Live Quick Search Bar -->
@@ -143,8 +143,8 @@
         </div>
 
         <div class="hero-actions">
-          <a href="register.html" class="btn-primary" data-i18n="landing.sell_crops">Start Selling as Farmer</a>
-          <a href="login.html" class="btn-secondary" data-i18n="landing.buy_harvest">Buy Fresh Harvest</a>
+          <a href="#marketplace" class="btn-primary" data-i18n="landing.browse_crops">Browse Crops</a>
+          <a href="register.html" class="btn-secondary" data-i18n="landing.start_selling">Start Selling</a>
         </div>
 
         <div class="hero-highlights">
@@ -204,6 +204,144 @@
             <div class="step-num">03</div>
             <h3>Direct Fulfillment & Tracking</h3>
             <p>Orders are confirmed with live timeline tracking. Real-time buyer-farmer direct messaging ensures complete transparency from field to fork.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Farmer & Buyer Benefits -->
+    <section class="benefits-section" style="padding: 60px 20px; background: var(--surface);">
+      <div class="section-container" style="max-width: 1200px; margin: 0 auto;">
+        <div class="section-header" style="text-align: center; margin-bottom: 40px;">
+          <span class="section-badge">Dual-Sided Value</span>
+          <h2>Empowering Both Growers and Buyers</h2>
+          <p>Farm Direct eliminates the 4-6 intermediary layers that inflate food prices and depress farmer incomes.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px;">
+          <!-- Farmer Benefits Card -->
+          <div style="background: var(--bg-app); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 32px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                <span style="font-size: 28px;">🌾</span>
+                <div>
+                  <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--primary); margin: 0;">For Farmers</h3>
+                  <span style="font-size: 13px; color: var(--ink-soft);">Earn fair value for your harvest</span>
+                </div>
+              </div>
+              <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; font-size: 14px;">
+                <li style="display: flex; gap: 10px; align-items: flex-start;">
+                  <span style="color: var(--secondary); font-weight: 700;">✓</span>
+                  <div><strong>0% Intermediary Deductions:</strong> Keep 95-100% of the sale value instead of losing 35-50% to middlemen.</div>
+                </li>
+                <li style="display: flex; gap: 10px; align-items: flex-start;">
+                  <span style="color: var(--secondary); font-weight: 700;">✓</span>
+                  <div><strong>Daily APMC Mandi Benchmarks:</strong> View official modal wholesale rates so you never underprice your crops.</div>
+                </li>
+                <li style="display: flex; gap: 10px; align-items: flex-start;">
+                  <span style="color: var(--secondary); font-weight: 700;">✓</span>
+                  <div><strong>Tiered Bulk Pricing:</strong> Offer volume discounts to attract restaurants, hostels, and wholesale buyers.</div>
+                </li>
+                <li style="display: flex; gap: 10px; align-items: flex-start;">
+                  <span style="color: var(--secondary); font-weight: 700;">✓</span>
+                  <div><strong>QR Crop Traceability:</strong> Generate certified batch QR codes that prove harvest freshness and origin.</div>
+                </li>
+              </ul>
+            </div>
+            <div style="margin-top: 28px;">
+              <a href="register.html" class="btn-primary" style="display: block; text-align: center;">Start Selling Produce →</a>
+            </div>
+          </div>
+
+          <!-- Buyer Benefits Card -->
+          <div style="background: var(--bg-app); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 32px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                <span style="font-size: 28px;">🛒</span>
+                <div>
+                  <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--secondary); margin: 0;">For Buyers</h3>
+                  <span style="font-size: 13px; color: var(--ink-soft);">Farm-fresh produce at transparent rates</span>
+                </div>
+              </div>
+              <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; font-size: 14px;">
+                <li style="display: flex; gap: 10px; align-items: flex-start;">
+                  <span style="color: var(--secondary); font-weight: 700;">✓</span>
+                  <div><strong>Field-Fresh Harvests:</strong> Direct from local farms to your doorstep without warehouse delays.</div>
+                </li>
+                <li style="display: flex; gap: 10px; align-items: flex-start;">
+                  <span style="color: var(--secondary); font-weight: 700;">✓</span>
+                  <div><strong>Transparent Price Comparison:</strong> See how seller prices compare with nearby APMC modal benchmarks.</div>
+                </li>
+                <li style="display: flex; gap: 10px; align-items: flex-start;">
+                  <span style="color: var(--secondary); font-weight: 700;">✓</span>
+                  <div><strong>Community Group Buying:</strong> Pool orders with neighbors and colleagues to unlock bulk wholesale rates.</div>
+                </li>
+                <li style="display: flex; gap: 10px; align-items: flex-start;">
+                  <span style="color: var(--secondary); font-weight: 700;">✓</span>
+                  <div><strong>Location-Based Discovery:</strong> Find nearby growers in your district and calculate distances.</div>
+                </li>
+              </ul>
+            </div>
+            <div style="margin-top: 28px;">
+              <a href="#marketplace" class="btn-secondary" style="display: block; text-align: center;">Browse Fresh Produce →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Location-Based Discovery & Mandi Transparency -->
+    <section class="location-discovery-section" style="padding: 60px 20px; background: var(--bg-app); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+      <div class="section-container" style="max-width: 1200px; margin: 0 auto;">
+        <div class="section-header" style="text-align: center; margin-bottom: 36px;">
+          <span class="section-badge">Location-Aware Marketplace</span>
+          <h2>Find Nearby Growers & Real Mandi Rates</h2>
+          <p>Discover agricultural harvests and official government APMC prices right in your district.</p>
+        </div>
+
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 28px; box-shadow: var(--shadow-md);">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: flex-end; margin-bottom: 24px;">
+            <div>
+              <label class="field-label" style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px;">Select Region / State</label>
+              <select id="landingRegionSelect" style="width: 100%; height: 42px; border-radius: var(--radius-md); border: 1px solid var(--border); padding: 0 12px; font-family: inherit; font-size: 14px;" onchange="updateLandingLocationPreview()">
+                <option value="pune">Maharashtra — Pune District</option>
+                <option value="nashik">Maharashtra — Nashik District</option>
+                <option value="nagpur">Maharashtra — Nagpur District</option>
+                <option value="indore">Madhya Pradesh — Indore District</option>
+                <option value="rajkot">Gujarat — Rajkot District</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px;">Commodity Benchmark</label>
+              <select id="landingCommoditySelect" style="width: 100%; height: 42px; border-radius: var(--radius-md); border: 1px solid var(--border); padding: 0 12px; font-family: inherit; font-size: 14px;" onchange="updateLandingLocationPreview()">
+                <option value="Onion">Onion (कांदा)</option>
+                <option value="Tomato">Tomato (टोमॅटो)</option>
+                <option value="Potato">Potato (बटाटा)</option>
+                <option value="Wheat">Wheat (गहू)</option>
+                <option value="Rice">Rice (तांदूळ)</option>
+              </select>
+            </div>
+            <div>
+              <a href="market-prices.html" class="btn-primary" style="display: block; text-align: center; height: 42px; line-height: 42px; padding: 0 18px;">Explore All Mandi Prices →</a>
+            </div>
+          </div>
+
+          <div id="landingMandiPreviewBox" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; padding: 18px; background: var(--bg-app); border-radius: var(--radius-lg); border: 1px solid var(--border-light);">
+            <div>
+              <span style="font-size: 12px; color: var(--ink-soft); text-transform: uppercase; font-weight: 700;">Nearest APMC Mandi</span>
+              <div id="landingMandiName" style="font-size: 16px; font-weight: 800; color: var(--ink); margin-top: 4px;">Pune APMC (Gultekdi)</div>
+              <span id="landingMandiDist" style="font-size: 12px; color: var(--secondary); font-weight: 600;">Central Market Hub</span>
+            </div>
+            <div>
+              <span style="font-size: 12px; color: var(--ink-soft); text-transform: uppercase; font-weight: 700;">Modal Wholesale Rate</span>
+              <div id="landingModalRate" style="font-size: 20px; font-weight: 800; color: var(--primary); margin-top: 2px;">₹22.00 / kg</div>
+              <span id="landingModalQtl" style="font-size: 11px; color: var(--ink-soft);">₹2,200 / Quintal</span>
+            </div>
+            <div>
+              <span style="font-size: 12px; color: var(--ink-soft); text-transform: uppercase; font-weight: 700;">Direct Trade Advantage</span>
+              <div style="font-size: 15px; font-weight: 800; color: var(--secondary); margin-top: 4px;">+15% Net Farmer Margin</div>
+              <span style="font-size: 11px; color: var(--ink-soft);">Zero commission agent cut</span>
+            </div>
           </div>
         </div>
       </div>
@@ -437,6 +575,56 @@
     }
 
     loadLandingCrops();
+
+    // Location & Mandi preview data for landing page
+    const MANDI_PREVIEWS = {
+      'pune_Onion': { name: 'Pune APMC (Gultekdi)', dist: 'Central Market Hub', rate: '₹22.00 / kg', qtl: '₹2,200 / Quintal' },
+      'pune_Tomato': { name: 'Pune APMC (Gultekdi)', dist: 'Central Market Hub', rate: '₹18.00 / kg', qtl: '₹1,800 / Quintal' },
+      'pune_Potato': { name: 'Pune APMC (Gultekdi)', dist: 'Central Market Hub', rate: '₹19.50 / kg', qtl: '₹1,950 / Quintal' },
+      'pune_Wheat': { name: 'Pune APMC (Gultekdi)', dist: 'Central Market Hub', rate: '₹29.50 / kg', qtl: '₹2,950 / Quintal' },
+      'pune_Rice': { name: 'Pune APMC (Gultekdi)', dist: 'Central Market Hub', rate: '₹36.00 / kg', qtl: '₹3,600 / Quintal' },
+
+      'nashik_Onion': { name: 'Lasalgaon APMC (Asia’s Largest)', dist: 'Nashik District', rate: '₹21.50 / kg', qtl: '₹2,150 / Quintal' },
+      'nashik_Tomato': { name: 'Nashik APMC', dist: 'Nashik District', rate: '₹17.00 / kg', qtl: '₹1,700 / Quintal' },
+      'nashik_Potato': { name: 'Nashik APMC', dist: 'Nashik District', rate: '₹18.50 / kg', qtl: '₹1,850 / Quintal' },
+      'nashik_Wheat': { name: 'Nashik APMC', dist: 'Nashik District', rate: '₹28.00 / kg', qtl: '₹2,800 / Quintal' },
+      'nashik_Rice': { name: 'Nashik APMC', dist: 'Nashik District', rate: '₹34.00 / kg', qtl: '₹3,400 / Quintal' },
+
+      'nagpur_Onion': { name: 'Nagpur APMC (Kalamna)', dist: 'Vidarbha Region', rate: '₹23.00 / kg', qtl: '₹2,300 / Quintal' },
+      'nagpur_Tomato': { name: 'Nagpur APMC (Kalamna)', dist: 'Vidarbha Region', rate: '₹19.00 / kg', qtl: '₹1,900 / Quintal' },
+      'nagpur_Potato': { name: 'Nagpur APMC (Kalamna)', dist: 'Vidarbha Region', rate: '₹20.00 / kg', qtl: '₹2,000 / Quintal' },
+      'nagpur_Wheat': { name: 'Nagpur APMC (Kalamna)', dist: 'Vidarbha Region', rate: '₹29.50 / kg', qtl: '₹2,950 / Quintal' },
+      'nagpur_Rice': { name: 'Nagpur APMC (Kalamna)', dist: 'Vidarbha Region', rate: '₹36.00 / kg', qtl: '₹3,600 / Quintal' },
+
+      'indore_Onion': { name: 'Indore APMC (Choithram)', dist: 'Malwa Region', rate: '₹20.50 / kg', qtl: '₹2,050 / Quintal' },
+      'indore_Wheat': { name: 'Indore APMC (Choithram)', dist: 'Malwa Region', rate: '₹28.00 / kg', qtl: '₹2,800 / Quintal' },
+      'indore_Tomato': { name: 'Indore APMC (Choithram)', dist: 'Malwa Region', rate: '₹16.50 / kg', qtl: '₹1,650 / Quintal' },
+      'indore_Potato': { name: 'Indore APMC (Choithram)', dist: 'Malwa Region', rate: '₹18.00 / kg', qtl: '₹1,800 / Quintal' },
+      'indore_Rice': { name: 'Indore APMC (Choithram)', dist: 'Malwa Region', rate: '₹33.00 / kg', qtl: '₹3,300 / Quintal' },
+
+      'rajkot_Onion': { name: 'Rajkot APMC', dist: 'Saurashtra Region', rate: '₹21.00 / kg', qtl: '₹2,100 / Quintal' },
+      'rajkot_Tomato': { name: 'Rajkot APMC', dist: 'Saurashtra Region', rate: '₹17.50 / kg', qtl: '₹1,750 / Quintal' },
+      'rajkot_Potato': { name: 'Rajkot APMC', dist: 'Saurashtra Region', rate: '₹19.00 / kg', qtl: '₹1,900 / Quintal' },
+      'rajkot_Wheat': { name: 'Rajkot APMC', dist: 'Saurashtra Region', rate: '₹28.50 / kg', qtl: '₹2,850 / Quintal' },
+      'rajkot_Rice': { name: 'Rajkot APMC', dist: 'Saurashtra Region', rate: '₹35.00 / kg', qtl: '₹3,500 / Quintal' }
+    };
+
+    function updateLandingLocationPreview() {
+      const reg = document.getElementById('landingRegionSelect') ? document.getElementById('landingRegionSelect').value : 'pune';
+      const comm = document.getElementById('landingCommoditySelect') ? document.getElementById('landingCommoditySelect').value : 'Onion';
+      const key = `${reg}_${comm}`;
+      const data = MANDI_PREVIEWS[key] || MANDI_PREVIEWS['pune_Onion'];
+
+      const nameEl = document.getElementById('landingMandiName');
+      const distEl = document.getElementById('landingMandiDist');
+      const rateEl = document.getElementById('landingModalRate');
+      const qtlEl = document.getElementById('landingModalQtl');
+
+      if (nameEl) nameEl.textContent = data.name;
+      if (distEl) distEl.textContent = data.dist;
+      if (rateEl) rateEl.textContent = data.rate;
+      if (qtlEl) qtlEl.textContent = data.qtl;
+    }
 
     // Quick search bar on landing page
     const searchInput = document.getElementById('landingSearchInput');
