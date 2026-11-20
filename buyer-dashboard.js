@@ -541,8 +541,10 @@ async function loadOrders() {
           </div>
 
           <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-            <button class="btn-secondary btn-small" onclick="openBuyerTimeline(${order.id})">🕒 View Fulfillment Timeline</button>
-            ${order.status === 'delivered' ? `<button class="btn-primary btn-small" onclick="openLeaveReviewModal(${order.id}, '${escapeHtml(order.crop_name)}', '${escapeHtml(order.farmer_name)}')">⭐ Leave Review</button>` : ''}
+            <button class="btn-primary btn-small" onclick="trackOrderLive(${order.id})">🚚 Track Live Delivery</button>
+            <button class="btn-secondary btn-small" onclick="viewOrderInvoice(${order.id})">📄 Tax Invoice</button>
+            <button class="btn-secondary btn-small" onclick="openBuyerDisputeModal(${order.id})">⚠️ Report Issue</button>
+            ${order.status === 'delivered' ? `<button class="btn-primary btn-small" style="background:#15803D;" onclick="openLeaveReviewModal(${order.id}, '${escapeHtml(order.crop_name)}', '${escapeHtml(order.farmer_name)}')">⭐ Leave Review</button>` : ''}
             ${order.status === 'pending' ? `<button class="danger btn-small" onclick="cancelOrder(${order.id})">Cancel Order</button>` : ''}
             <button class="toggle-messages btn-small" onclick="toggleBuyerMessages(${order.id}, ${order.farmer_id})">💬 Message Farmer</button>
           </div>
@@ -641,40 +643,297 @@ function loadTrackOrdersView() {
   });
 }
 
-window.renderDedicatedTracking = async function(orderId) {
-  const output = document.getElementById('dedicatedTrackingOutput');
-  if (!output || !orderId) return;
+// ============================================================================
+// 8-STAGE LIVE DELIVERY & MAP TRACKING MODULE
+// ============================================================================
+let trackingMapInstance = null;
+let trackingDriverMarker = null;
+let trackingPollTimer = null;
 
-  output.innerHTML = '<div class="notif-empty">Loading fulfillment stepper...</div>';
+window.trackOrderLive = function(orderId) {
+  showBuyerSection('trackOrdersView', 'Track Order Fulfillment', 'navTrackOrders');
+  const sel = document.getElementById('trackOrderSelect');
+  if (sel) {
+    sel.value = orderId;
+  }
+  window.renderDedicatedTracking(orderId);
+};
 
+window.viewOrderInvoice = async function(orderId) {
+  showToast('Fetching invoice...', 'info');
   try {
-    const res = await fetch(`${API_URL}/orders/${orderId}/timeline`, {
+    const res = await fetch(`${API_URL}/invoices/order/${orderId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
-
-    if (res.ok) {
-      output.innerHTML = `
-        <div style="background:var(--bg-app); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px; margin-bottom:16px;">
-          <h3 style="margin:0 0 6px;">Order #${data.order.id} — ${escapeHtml(data.order.crop_name)}</h3>
-          <p style="margin:0; font-size:13.5px;">Quantity: ${data.order.quantity} kg · Total: ₹${Number(data.order.total_price).toFixed(2)} · Status: <span class="status-tag status-${data.order.status}">${data.order.status}</span></p>
-        </div>
-        <div class="timeline-stepper">
-          ${data.timeline.map(step => `
-            <div class="timeline-step">
-              <div class="timeline-dot"></div>
-              <div class="timeline-content">
-                <div class="timeline-status">${escapeHtml(step.status.toUpperCase())} <small style="color:var(--ink-soft); font-weight:normal;">(${escapeHtml(step.actor_role)})</small></div>
-                <div class="timeline-note">${escapeHtml(step.note || '')}</div>
-                <div class="timeline-time">${formatDate(step.created_at)}</div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `;
+    if (res.ok && data.invoice) {
+      window.open(`${API_URL}/invoices/${data.invoice.id}/print`, '_blank');
+    } else {
+      showToast('Invoice is generating. Please check again in a moment.', 'info');
     }
   } catch (err) {
-    output.innerHTML = '<div class="empty-state">Could not load tracking details.</div>';
+    showToast('Could not load invoice', 'error');
+  }
+};
+
+window.renderDedicatedTracking = async function(orderId) {
+  const output = document.getElementById('dedicatedTrackingOutput');
+  const indicator = document.getElementById('liveTrackingAutoRefreshIndicator');
+  if (!output || !orderId) return;
+
+  if (trackingPollTimer) {
+    clearInterval(trackingPollTimer);
+    trackingPollTimer = null;
+  }
+  if (indicator) indicator.style.display = 'none';
+
+  output.innerHTML = '<div class="notif-empty">Fetching real-time shipment & GPS telemetry...</div>';
+
+  try {
+    // Parallel fetch: timeline and live delivery tracking
+    const [resTimeline, resDelivery] = await Promise.all([
+      fetch(`${API_URL}/orders/${orderId}/timeline`, { headers: { 'Authorization': `Bearer ${token}` } }),
+      fetch(`${API_URL}/delivery/track/order/${orderId}`, { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null)
+    ]);
+
+    const timelineData = await resTimeline.json();
+    const deliveryData = resDelivery && resDelivery.ok ? await resDelivery.json() : null;
+
+    if (!resTimeline.ok || !timelineData.order) {
+      output.innerHTML = '<div class="empty-state">Order details unavailable.</div>';
+      return;
+    }
+
+    const order = timelineData.order;
+    const tracking = deliveryData ? deliveryData.tracking : null;
+    const partner = deliveryData ? deliveryData.delivery_partner : null;
+    const proof = deliveryData ? deliveryData.proof : null;
+    const latestGps = deliveryData ? deliveryData.latest_location : null;
+
+    // Determine current milestone (1-8)
+    const delivStatus = tracking ? tracking.delivery_status : '';
+    let currentStage = 1;
+    if (order.status === 'cancelled') {
+      currentStage = 0;
+    } else if (order.status === 'delivered') {
+      currentStage = 8;
+    } else if (delivStatus === 'delivered') {
+      currentStage = 7;
+    } else if (delivStatus === 'out_for_delivery') {
+      currentStage = 6;
+    } else if (delivStatus === 'in_transit') {
+      currentStage = 5;
+    } else if (delivStatus === 'picked_up') {
+      currentStage = 4;
+    } else if (partner || delivStatus === 'assigned') {
+      currentStage = 3;
+    } else if (order.status !== 'pending') {
+      currentStage = 2;
+    } else {
+      currentStage = 1;
+    }
+
+    const stages = [
+      { num: 1, title: '1. Placed', desc: 'Order logged' },
+      { num: 2, title: '2. Confirmed', desc: 'Farmer confirmed' },
+      { num: 3, title: '3. Assigned', desc: 'Driver linked' },
+      { num: 4, title: '4. Picked Up', desc: 'Collected at farm' },
+      { num: 5, title: '5. In Transit', desc: 'Highway en route' },
+      { num: 6, title: '6. Out for Delivery', desc: 'Arriving soon' },
+      { num: 7, title: '7. Delivered', desc: 'Handover complete' },
+      { num: 8, title: '8. Fulfilled', desc: 'Order closed' }
+    ];
+
+    output.innerHTML = `
+      <div style="background:var(--bg-app); border:1px solid var(--border); border-radius:var(--radius-md); padding:18px; margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h3 style="margin:0 0 4px 0;">Order #ORD-${order.id} — ${escapeHtml(order.crop_name)}</h3>
+            <p style="margin:0; font-size:13px; color:var(--ink-soft);">
+              Quantity: <strong>${order.quantity} kg</strong> · Amount: <strong>₹${Number(order.total_price || 0).toLocaleString('en-IN')}</strong> · Farmer: <strong>${escapeHtml(order.farmer_name || 'Farmer')}</strong>
+            </p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn-secondary btn-small" onclick="viewOrderInvoice(${order.id})">📄 Tax Invoice</button>
+            <button class="btn-secondary btn-small" onclick="openBuyerDisputeModal(${order.id})">⚠️ Raise Dispute</button>
+          </div>
+        </div>
+
+        <!-- 8-Stage Milestone Cards -->
+        <div class="timeline-8-steps">
+          ${stages.map(s => {
+            const isCompleted = currentStage > s.num || (currentStage === 8);
+            const isCurrent = currentStage === s.num && currentStage !== 8;
+            const cls = isCompleted ? 'completed' : isCurrent ? 'current' : '';
+            return `
+              <div class="timeline-stage-card ${cls}">
+                <div style="font-size:12px; font-weight:700;">${escapeHtml(s.title)}</div>
+                <div style="font-size:10px; margin-top:2px;">${isCompleted ? '✓ Done' : isCurrent ? '● Active' : escapeHtml(s.desc)}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- Delivery Partner Telemetry Card -->
+        ${partner ? `
+          <div class="driver-info-box">
+            <div>
+              <div style="font-size:11px; text-transform:uppercase; color:#B45309; font-weight:700; letter-spacing:0.04em;">Assigned Delivery Partner</div>
+              <strong style="font-size:1.05rem; display:block; margin:2px 0;">${escapeHtml(partner.name)}</strong>
+              <div style="font-size:12px; color:var(--ink-soft);">
+                Vehicle: ${escapeHtml(partner.vehicle_type || 'Transport')} · Registration: <code>${escapeHtml(partner.vehicle_number || 'En route')}</code>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <span class="status-badge ${partner.is_sharing_location ? 'status-delivered' : 'status-pending'}">
+                ${partner.is_sharing_location ? '● GPS Broadcasting' : 'Stationary / Standby'}
+              </span>
+              ${latestGps ? `
+                <div style="font-size:11px; color:var(--ink-muted); margin-top:4px;">
+                  Speed: ${latestGps.speed_kmh || 0} km/h · Pinged: ${new Date(latestGps.recorded_at).toLocaleTimeString('en-IN')}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        ` : `
+          <div style="padding:10px 14px; background:#F8FAFC; border:1px solid var(--border); border-radius:6px; font-size:12px; color:var(--ink-soft); margin-top:10px;">
+            ℹ️ Waiting for farmer dispatch confirmation and logistics partner assignment.
+          </div>
+        `}
+
+        ${proof ? `
+          <div style="margin-top:14px; background:#DCFCE7; border:1px solid #86EFAC; padding:12px; border-radius:8px;">
+            <strong style="color:#15803D;">✓ Proof of Delivery Verified:</strong>
+            <p style="margin:4px 0 0; font-size:12.5px; color:#14532D;">
+              Handed over to <strong>${escapeHtml(proof.recipient_name)}</strong> on ${new Date(proof.delivered_at).toLocaleString('en-IN')}. Note: "${escapeHtml(proof.notes || 'Received in good condition')}"
+            </p>
+          </div>
+        ` : ''}
+
+        <!-- Interactive Leaflet Route Map -->
+        <div style="margin-top:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <strong style="font-size:13px;">Live Route Navigation</strong>
+            <span style="font-size:11px; color:var(--ink-muted);">OpenStreetMap Data</span>
+          </div>
+          <div id="buyerTrackingMap" style="height:280px; width:100%; border-radius:8px; border:1px solid var(--border);"></div>
+        </div>
+      </div>
+    `;
+
+    // Initialize Map
+    setTimeout(() => {
+      initBuyerTrackingMap(order, partner, latestGps);
+    }, 150);
+
+    // Auto-refresh polling if in active transit
+    if (delivStatus === 'in_transit' || delivStatus === 'out_for_delivery' || delivStatus === 'picked_up') {
+      if (indicator) indicator.style.display = 'inline-block';
+      trackingPollTimer = setInterval(() => {
+        window.renderDedicatedTracking(orderId);
+      }, 15000);
+    }
+  } catch (err) {
+    console.error('Tracking render error:', err);
+    output.innerHTML = '<div class="empty-state">Could not load live tracking details.</div>';
+  }
+};
+
+function initBuyerTrackingMap(order, partner, latestGps) {
+  const mapEl = document.getElementById('buyerTrackingMap');
+  if (!mapEl || typeof L === 'undefined') return;
+
+  if (trackingMapInstance) {
+    trackingMapInstance.remove();
+    trackingMapInstance = null;
+  }
+
+  // Determine center coordinates (default Pune)
+  const defaultLat = 18.5204;
+  const defaultLng = 73.8567;
+  const driverLat = latestGps ? latestGps.latitude : defaultLat;
+  const driverLng = latestGps ? latestGps.longitude : defaultLng;
+
+  trackingMapInstance = L.map('buyerTrackingMap').setView([driverLat, driverLng], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 18
+  }).addTo(trackingMapInstance);
+
+  const markers = [];
+
+  // Farm marker (Pickup)
+  const farmLat = defaultLat - 0.08;
+  const farmLng = defaultLng - 0.08;
+  const farmMarker = L.marker([farmLat, farmLng]).addTo(trackingMapInstance)
+    .bindPopup(`<b>🌱 Farm Pickup:</b> ${escapeHtml(order.farmer_name || 'Farmer')}`);
+  markers.push(farmMarker);
+
+  // Buyer destination marker
+  const buyerLat = defaultLat + 0.05;
+  const buyerLng = defaultLng + 0.05;
+  const destMarker = L.marker([buyerLat, buyerLng]).addTo(trackingMapInstance)
+    .bindPopup(`<b>🏁 Delivery Destination:</b> Your Address`);
+  markers.push(destMarker);
+
+  // Driver marker (Live)
+  if (partner && latestGps) {
+    trackingDriverMarker = L.marker([driverLat, driverLng]).addTo(trackingMapInstance)
+      .bindPopup(`<b>🚚 Driver:</b> ${escapeHtml(partner.name)}<br>Speed: ${latestGps.speed_kmh || 0} km/h`)
+      .openPopup();
+    markers.push(trackingDriverMarker);
+  }
+
+  if (markers.length > 0) {
+    const group = L.featureGroup(markers);
+    trackingMapInstance.fitBounds(group.getBounds().pad(0.2));
+  }
+}
+
+// Buyer Dispute Handlers
+window.openBuyerDisputeModal = function(orderId) {
+  const idInput = document.getElementById('disputeOrderId');
+  if (idInput) idInput.value = orderId;
+  const m = document.getElementById('buyerDisputeModal');
+  if (m) m.style.display = 'flex';
+};
+
+window.closeBuyerDisputeModal = function() {
+  const m = document.getElementById('buyerDisputeModal');
+  if (m) m.style.display = 'none';
+};
+
+window.handleBuyerDisputeSubmit = async function(e) {
+  e.preventDefault();
+  const orderId = document.getElementById('disputeOrderId').value;
+  const category = document.getElementById('disputeCategory').value;
+  const subject = document.getElementById('disputeSubject').value.trim();
+  const desc = document.getElementById('disputeDescription').value.trim();
+
+  try {
+    const res = await fetch(`${API_URL}/complaints`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        order_id: orderId ? parseInt(orderId) : null,
+        category: category,
+        subject: subject,
+        description: desc
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Support ticket dispatched to platform administrators!', 'success');
+      closeBuyerDisputeModal();
+      document.getElementById('buyerDisputeForm').reset();
+    } else {
+      showToast(data.error || 'Failed to submit ticket', 'error');
+    }
+  } catch (err) {
+    showToast('Connection failed', 'error');
   }
 };
 

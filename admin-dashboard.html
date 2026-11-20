@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Farm Direct</title>
+  <meta name="description" content="Central administration console for Farm Direct marketplace: user moderation, crop reviews, order oversight, logistics fleet management, and audit trails.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      background: #FEF2F2;
+      color: #DC2626;
+      border: 1px solid #FCA5A5;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .audit-code {
+      font-family: monospace;
+      font-size: 0.8rem;
+      background: #F1F5F9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #334155;
+    }
+    .badge-super {
+      background: #7E22CE;
+      color: #FFFFFF;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="dashboard-body">
+  <div class="dashboard-layout">
+    
+    <!-- Mobile Drawer Backdrop -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- Fixed Left Sidebar -->
+    <aside class="app-sidebar" id="appSidebar">
+      <!-- Sidebar Brand Header -->
+      <div class="sidebar-header">
+        <a href="admin-dashboard.html" class="brand-link">
+          <div class="brand-icon" style="background:#143D2B;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/>
+              <path d="M7 13c3 0 7-2 9-8-2 6-4 9-9 9z"/>
+              <path d="M12 22V12"/>
+            </svg>
+          </div>
+          <div class="brand-meta">
+            <span class="brand-title">Farm Direct</span>
+            <span class="brand-tagline">Admin Console</span>
+          </div>
+        </a>
+        <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Collapse / Expand Sidebar" aria-label="Toggle sidebar width">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="sidebar-nav">
+        <!-- PLATFORM OVERSIGHT -->
+        <div class="nav-group">
+          <span class="nav-group-label">Platform Control</span>
+          
+          <button class="nav-item active" id="navAdminOverview" onclick="showAdminSection('adminOverviewView', 'Platform Overview', 'navAdminOverview')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </span>
+            <span class="nav-item-label">Overview Metrics</span>
+          </button>
+
+          <button class="nav-item" id="navAdminUsers" onclick="showAdminSection('adminUsersView', 'User Management', 'navAdminUsers')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </span>
+            <span class="nav-item-label">User Accounts</span>
+          </button>
+
+          <button class="nav-item" id="navAdminCreateDriver" onclick="showAdminSection('adminCreateDriverView', 'Create Delivery Partner', 'navAdminCreateDriver')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="3" width="15" height="13"></rect>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+              </svg>
+            </span>
+            <span class="nav-item-label">+ Add Delivery Partner</span>
+          </button>
+
+          <button class="nav-item" id="navAdminCrops" onclick="showAdminSection('adminCropsView', 'Crop Moderation', 'navAdminCrops')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </span>
+            <span class="nav-item-label">Crop Listings</span>
+          </button>
+
+          <button class="nav-item" id="navAdminOrders" onclick="showAdminSection('adminOrdersView', 'Orders & Status Override', 'navAdminOrders')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </span>
+            <span class="nav-item-label">Orders & Override</span>
+          </button>
+
+          <button class="nav-item" id="navAdminLogistics" onclick="showAdminSection('adminLogisticsView', 'Logistics Fleet & Assignments', 'navAdminLogistics')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                <line x1="8" y1="2" x2="8" y2="18"></line>
+                <line x1="16" y1="6" x2="16" y2="22"></line>
+              </svg>
+            </span>
+            <span class="nav-item-label">Delivery Fleet</span>
+          </button>
+        </div>
+
+        <!-- COMPLIANCE & GOVERNANCE -->
+        <div class="nav-group">
+          <span class="nav-group-label">Governance & Trust</span>
+
+          <button class="nav-item" id="navAdminCertificates" onclick="showAdminSection('adminCertificatesView', 'Organic Certificates Verification', 'navAdminCertificates')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="8" r="7"></circle>
+                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+              </svg>
+            </span>
+            <span class="nav-item-label">Certificates Review</span>
+          </button>
+
+          <button class="nav-item" id="navAdminComplaints" onclick="showAdminSection('adminComplaintsView', 'Support Tickets & Disputes', 'navAdminComplaints')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </span>
+            <span class="nav-item-label">Complaints & Disputes</span>
+          </button>
+
+          <button class="nav-item" id="navAdminAuditLogs" onclick="showAdminSection('adminAuditLogsView', 'System Audit Trails', 'navAdminAuditLogs')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </span>
+            <span class="nav-item-label">Audit Logs</span>
+          </button>
+
+          <button class="nav-item" id="navAdminSettings" onclick="showAdminSection('adminSettingsView', 'Platform Configurations', 'navAdminSettings')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </span>
+            <span class="nav-item-label">Platform Settings</span>
+          </button>
+        </div>
+      </nav>
+
+      <!-- Sidebar Footer / Logout -->
+      <div class="sidebar-footer" style="padding: 16px; border-top: 1px solid var(--border);">
+        <button class="btn-secondary" style="width:100%;" onclick="handleAdminLogout()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span style="margin-left:8px;">Sign Out</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Shell -->
+    <div class="dashboard-main">
+      <!-- Top Navbar -->
+      <header class="top-nav">
+        <div class="nav-left">
+          <button class="mobile-toggle" id="mobileMenuBtn" aria-label="Toggle navigation drawer">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div class="page-title-wrap">
+            <h1 class="page-title" id="adminPageTitle">Platform Overview</h1>
+            <div class="breadcrumb">
+              <a href="admin-dashboard.html">Admin</a>
+              <span class="sep">/</span>
+              <span id="adminBreadcrumb">Overview</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-right">
+          <!-- Language Selector -->
+          <div class="lang-selector-wrap" title="Select Language">
+            <svg class="lang-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            <select class="fd-language-selector" id="languageSelect" onchange="FD_I18N.setLanguage(this.value)">
+              <option value="en">English</option>
+              <option value="hi">हिन्दी (Hindi)</option>
+              <option value="mr">मराठी (Marathi)</option>
+            </select>
+          </div>
+
+          <!-- Admin User Indicator -->
+          <div class="user-profile-badge" style="display:flex; align-items:center; gap:8px;">
+            <div style="text-align:right;">
+              <strong id="adminUserName" style="font-size:0.9rem; display:block;">Administrator</strong>
+              <span class="admin-pill" id="adminRoleBadge">SUPER_ADMIN</span>
+            </div>
+            <div style="width:38px; height:38px; border-radius:50%; background:#143D2B; color:#FFF; display:flex; align-items:center; justify-content:center; font-weight:700;">
+              A
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Body Container -->
+      <main class="content-container">
+        
+        <!-- SECTION 1: OVERVIEW METRICS -->
+        <section id="adminOverviewView" class="dashboard-view active">
+          <div class="stats-grid" id="adminMetricsGrid">
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#E0F2FE; color:#0369A1;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+              </div>
+              <div class="stat-meta">
+                <span class="stat-label">Total Users</span>
+                <span class="stat-value" id="metricTotalUsers">0</span>
+                <span class="stat-hint" id="metricUserBreakdown">0 Farmers · 0 Buyers</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#FEF3C7; color:#B45309;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon></svg>
+              </div>
+              <div class="stat-meta">
+                <span class="stat-label">Active Drivers</span>
+                <span class="stat-value" id="metricTotalDrivers">0</span>
+                <span class="stat-hint">Delivery Fleet</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#DCFCE7; color:#15803D;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <div class="stat-meta">
+                <span class="stat-label">Active Crops</span>
+                <span class="stat-value" id="metricActiveCrops">0</span>
+                <span class="stat-hint" id="metricFlaggedCrops">0 Flagged</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#EDE9FE; color:#6D28D9;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+              </div>
+              <div class="stat-meta">
+                <span class="stat-label">Total Orders</span>
+                <span class="stat-value" id="metricTotalOrders">0</span>
+                <span class="stat-hint" id="metricCompletedOrders">0 Delivered</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#FEE2E2; color:#DC2626;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+              </div>
+              <div class="stat-meta">
+                <span class="stat-label">Open Complaints</span>
+                <span class="stat-value" id="metricOpenComplaints">0</span>
+                <span class="stat-hint">Pending Resolution</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#ECFDF5; color:#047857;">
+                <span style="font-weight:700; font-size:1.4rem;">₹</span>
+              </div>
+              <div class="stat-meta">
+                <span class="stat-label">Gross Marketplace Value</span>
+                <span class="stat-value" id="metricTotalGMV">₹0</span>
+                <span class="stat-hint">Total Traded Volume</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Activity & Security Log Card -->
+          <div class="card" style="margin-top:24px;">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h3>Recent System Audit Events</h3>
+                <p>Non-repudiable real-time activity log across users, orders, and administrative actions.</p>
+              </div>
+              <button class="btn-secondary btn-small" onclick="showAdminSection('adminAuditLogsView', 'System Audit Trails', 'navAdminAuditLogs')">View Full Trail</button>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="recentAuditTable">
+                  <thead>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>Action</th>
+                      <th>Resource</th>
+                      <th>Performed By</th>
+                      <th>IP Address</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="5" style="text-align:center; padding:20px;">Loading audit events...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 2: USER MANAGEMENT -->
+        <section id="adminUsersView" class="dashboard-view">
+          <div class="card">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div>
+                <h3>User Accounts & Role Verification</h3>
+                <p>Manage platform participants, review farmer verification, and enforce access controls.</p>
+              </div>
+              <div style="display:flex; gap:10px; align-items:center;">
+                <input type="text" id="adminUserSearch" placeholder="Search by name, email..." class="search-input" style="padding:8px 12px; border:1px solid var(--border); border-radius:6px;" oninput="debounceAdminUsers()">
+                <select id="adminUserRoleFilter" class="fd-select" style="padding:8px 12px; border:1px solid var(--border); border-radius:6px;" onchange="loadAdminUsers()">
+                  <option value="">All Roles</option>
+                  <option value="farmer">Farmers</option>
+                  <option value="buyer">Individual Buyers</option>
+                  <option value="business_buyer">Business Buyers</option>
+                  <option value="fpo_manager">FPO Managers</option>
+                  <option value="delivery_partner">Delivery Fleet</option>
+                  <option value="admin">Administrators</option>
+                </select>
+                <select id="adminUserStatusFilter" class="fd-select" style="padding:8px 12px; border:1px solid var(--border); border-radius:6px;" onchange="loadAdminUsers()">
+                  <option value="">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="suspended">Suspended</option>
+                  <option value="pending_verification">Pending Verification</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="adminUsersTable">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>User</th>
+                      <th>Role</th>
+                      <th>Status</th>
+                      <th>Location</th>
+                      <th>Verified Farmer</th>
+                      <th>Created</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="8" style="text-align:center; padding:20px;">Loading users...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 3: CREATE DELIVERY PARTNER -->
+        <section id="adminCreateDriverView" class="dashboard-view">
+          <div class="card" style="max-width:800px; margin: 0 auto;">
+            <div class="card-header">
+              <h3>Register Delivery Fleet Partner</h3>
+              <p>For system security, delivery partner accounts are created only by platform administrators.</p>
+            </div>
+            <div class="card-body">
+              <form id="createDriverForm">
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+                  <div class="input-group">
+                    <label class="field-label" for="driverName">Full Name *</label>
+                    <input type="text" id="driverName" placeholder="e.g. Ramesh Shinde" required>
+                  </div>
+                  <div class="input-group">
+                    <label class="field-label" for="driverRegEmail">Driver Email *</label>
+                    <input type="email" id="driverRegEmail" placeholder="driver@logistics.farmdirect" required>
+                  </div>
+                  <div class="input-group">
+                    <label class="field-label" for="driverPhone">Phone Number *</label>
+                    <input type="tel" id="driverPhone" placeholder="+91 98765 43210" required>
+                  </div>
+                  <div class="input-group">
+                    <label class="field-label" for="driverRegPassword">Initial Password *</label>
+                    <input type="password" id="driverRegPassword" placeholder="Minimum 8 characters" required>
+                  </div>
+                  <div class="input-group">
+                    <label class="field-label" for="driverVehicleType">Vehicle Type *</label>
+                    <select id="driverVehicleType" class="fd-select" required>
+                      <option value="two_wheeler">Two-Wheeler (Local Express)</option>
+                      <option value="three_wheeler">3-Wheeler Auto Cargo</option>
+                      <option value="mini_truck" selected>Mini Truck (Tata Ace / Pickup)</option>
+                      <option value="refrigerated_van">Refrigerated Cold-Chain Van</option>
+                      <option value="heavy_truck">Heavy Transport Truck</option>
+                    </select>
+                  </div>
+                  <div class="input-group">
+                    <label class="field-label" for="driverVehicleNumber">Vehicle Registration Number *</label>
+                    <input type="text" id="driverVehicleNumber" placeholder="e.g. MH 12 AB 1234" required>
+                  </div>
+                  <div class="input-group">
+                    <label class="field-label" for="driverLicenseNumber">Driving License (DL) *</label>
+                    <input type="text" id="driverLicenseNumber" placeholder="e.g. MH1220200012345" required>
+                  </div>
+                  <div class="input-group">
+                    <label class="field-label" for="driverServiceCity">Service City / Hub Region *</label>
+                    <input type="text" id="driverServiceCity" placeholder="e.g. Pune, Maharashtra" required>
+                  </div>
+                </div>
+
+                <div style="margin-top:20px;">
+                  <button type="submit" class="btn-primary" id="btnCreateDriver">Create Delivery Partner</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 4: CROP MODERATION -->
+        <section id="adminCropsView" class="dashboard-view">
+          <div class="card">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div>
+                <h3>Crop Listing Moderation</h3>
+                <p>Monitor agricultural produce listings, flag misleading claims, or suspend violating items.</p>
+              </div>
+              <div style="display:flex; gap:10px;">
+                <select id="adminCropStatusFilter" class="fd-select" onchange="loadAdminCrops()">
+                  <option value="">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="flagged">Flagged</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="adminCropsTable">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Crop Name</th>
+                      <th>Farmer</th>
+                      <th>Category</th>
+                      <th>Price / Unit</th>
+                      <th>Stock</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="8" style="text-align:center; padding:20px;">Loading crops...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 5: ORDERS & OVERRIDE -->
+        <section id="adminOrdersView" class="dashboard-view">
+          <div class="card">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div>
+                <h3>Platform Orders & Status Override</h3>
+                <p>Inspect order lifecycles and execute administrative status overrides with mandatory audit reasons.</p>
+              </div>
+              <div style="display:flex; gap:10px;">
+                <select id="adminOrderStatusFilter" class="fd-select" onchange="loadAdminOrders()">
+                  <option value="">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="shipped">Shipped / In Transit</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="adminOrdersTable">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Buyer</th>
+                      <th>Farmer</th>
+                      <th>Crop & Quantity</th>
+                      <th>Total Amount</th>
+                      <th>Status</th>
+                      <th>Delivery Partner</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="8" style="text-align:center; padding:20px;">Loading orders...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 6: DELIVERY FLEET & ASSIGNMENTS -->
+        <section id="adminLogisticsView" class="dashboard-view">
+          <div class="card">
+            <div class="card-header">
+              <h3>Delivery Partner Fleet</h3>
+              <p>Active fleet members, vehicle profiles, and assigned delivery routes.</p>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="adminFleetTable">
+                  <thead>
+                    <tr>
+                      <th>Partner ID</th>
+                      <th>Name</th>
+                      <th>Phone</th>
+                      <th>Vehicle</th>
+                      <th>License</th>
+                      <th>Service City</th>
+                      <th>Active Tracking</th>
+                      <th>Completed Trips</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="8" style="text-align:center; padding:20px;">Loading logistics fleet...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 7: CERTIFICATES REVIEW -->
+        <section id="adminCertificatesView" class="dashboard-view">
+          <div class="card">
+            <div class="card-header">
+              <h3>Farmer Organic & Quality Certificates Review</h3>
+              <p>Review government and accredited organic certifications (NPOP, Jaivik Bharat, PGS-India, GAP).</p>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="adminCertsTable">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Farmer</th>
+                      <th>Certificate Type</th>
+                      <th>Issuing Authority</th>
+                      <th>Cert Number</th>
+                      <th>Validity</th>
+                      <th>Document</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="9" style="text-align:center; padding:20px;">Loading certificate submissions...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 8: COMPLAINTS & DISPUTES -->
+        <section id="adminComplaintsView" class="dashboard-view">
+          <div class="card">
+            <div class="card-header">
+              <h3>Customer & Farmer Dispute Tickets</h3>
+              <p>Manage quality mismatches, transit damages, and payment or fulfillment disputes.</p>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="adminComplaintsTable">
+                  <thead>
+                    <tr>
+                      <th>Ticket ID</th>
+                      <th>Complainant</th>
+                      <th>Order ID</th>
+                      <th>Category</th>
+                      <th>Subject & Description</th>
+                      <th>Status</th>
+                      <th>Resolution</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="8" style="text-align:center; padding:20px;">Loading dispute tickets...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 9: AUDIT LOGS -->
+        <section id="adminAuditLogsView" class="dashboard-view">
+          <div class="card">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h3>Immutable Platform Audit Log</h3>
+                <p>Complete historical records of security-sensitive operations, logins, overrides, and administrative decisions.</p>
+              </div>
+              <button class="btn-secondary btn-small" onclick="loadAdminAuditLogs()">Refresh Log</button>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="fullAuditLogsTable">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Timestamp</th>
+                      <th>User ID</th>
+                      <th>Action</th>
+                      <th>Resource</th>
+                      <th>IP Address</th>
+                      <th>Metadata Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="7" style="text-align:center; padding:20px;">Loading full audit trail...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 10: PLATFORM SETTINGS -->
+        <section id="adminSettingsView" class="dashboard-view">
+          <div class="card" style="max-width:700px; margin:0 auto;">
+            <div class="card-header">
+              <h3>System & Economic Settings</h3>
+              <p>Configure platform fee structures, discount thresholds, and operational flags.</p>
+            </div>
+            <div class="card-body">
+              <form id="adminSettingsForm">
+                <div class="input-group">
+                  <label class="field-label" for="settingCommission">Platform Service Fee (%)</label>
+                  <input type="number" step="0.1" id="settingCommission" value="2.5" min="0" max="25">
+                  <span class="field-hint">Service fee deducted on successful transactions (default 2.5%).</span>
+                </div>
+
+                <div class="input-group" style="margin-top:14px;">
+                  <label class="field-label" for="settingMaxDiscount">Max Buyer Negotiation Discount (%)</label>
+                  <input type="number" step="1" id="settingMaxDiscount" value="30" min="5" max="50">
+                  <span class="field-hint">Prevents abusive low-ball bids below fair market prices.</span>
+                </div>
+
+                <div class="input-group" style="margin-top:14px;">
+                  <label class="field-label" for="settingMaintenance">Platform Maintenance Mode</label>
+                  <select id="settingMaintenance" class="fd-select">
+                    <option value="false">Active (Normal Operation)</option>
+                    <option value="true">Maintenance Mode (Read-Only for Users)</option>
+                  </select>
+                </div>
+
+                <div style="margin-top:20px;">
+                  <button type="submit" class="btn-primary" id="btnSaveSettings">Save Platform Configurations</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ORDER STATUS OVERRIDE MODAL -->
+  <div class="modal-overlay" id="orderOverrideModal" style="display:none;">
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-header">
+        <h3>Administrative Order Override</h3>
+        <button class="modal-close-btn" onclick="closeOverrideModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.9rem; color:var(--ink-soft); margin-bottom:12px;">
+          Changing order status as an administrator is logged permanently to the platform audit trail.
+        </p>
+        <input type="hidden" id="overrideOrderId">
+        <div class="input-group">
+          <label class="field-label" for="overrideNewStatus">New Status *</label>
+          <select id="overrideNewStatus" class="fd-select">
+            <option value="pending">Pending</option>
+            <option value="accepted">Accepted</option>
+            <option value="shipped">Shipped / In Transit</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="input-group" style="margin-top:14px;">
+          <label class="field-label" for="overrideReason">Reason for Administrative Override *</label>
+          <textarea id="overrideReason" rows="3" placeholder="Provide detailed justification for this status change..." required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px;"></textarea>
+        </div>
+        <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn-secondary" onclick="closeOverrideModal()">Cancel</button>
+          <button type="button" class="btn-primary" id="btnSubmitOverride" onclick="submitOrderOverride()">Confirm Override</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ASSIGN DELIVERY PARTNER MODAL -->
+  <div class="modal-overlay" id="assignDriverModal" style="display:none;">
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-header">
+        <h3>Assign Delivery Partner</h3>
+        <button class="modal-close-btn" onclick="closeAssignDriverModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="assignDriverOrderId">
+        <div class="input-group">
+          <label class="field-label" for="selectDeliveryPartner">Choose Partner *</label>
+          <select id="selectDeliveryPartner" class="fd-select">
+            <option value="">Select a registered delivery partner</option>
+          </select>
+        </div>
+        <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn-secondary" onclick="closeAssignDriverModal()">Cancel</button>
+          <button type="button" class="btn-primary" onclick="submitDriverAssignment()">Assign Shipment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESOLVE COMPLAINT MODAL -->
+  <div class="modal-overlay" id="resolveComplaintModal" style="display:none;">
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-header">
+        <h3>Resolve Dispute Ticket</h3>
+        <button class="modal-close-btn" onclick="closeResolveModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="resolveTicketId">
+        <div class="input-group">
+          <label class="field-label" for="resolveAction">Resolution Status *</label>
+          <select id="resolveAction" class="fd-select">
+            <option value="resolved">Resolved in Favor of Buyer (Refund / Replacement)</option>
+            <option value="resolved">Resolved in Favor of Farmer (Order Valid)</option>
+            <option value="dismissed">Dismissed (Invalid Claim)</option>
+            <option value="under_investigation">Mark Under Active Investigation</option>
+          </select>
+        </div>
+        <div class="input-group" style="margin-top:14px;">
+          <label class="field-label" for="resolveNotes">Resolution Notes *</label>
+          <textarea id="resolveNotes" rows="3" placeholder="Enter formal resolution notes provided to complainant..." required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px;"></textarea>
+        </div>
+        <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn-secondary" onclick="closeResolveModal()">Cancel</button>
+          <button type="button" class="btn-primary" onclick="submitResolveComplaint()">Submit Resolution</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="ui.js"></script>
+  <script src="i18n.js"></script>
+  <script src="admin-dashboard.js"></script>
+</body>
+</html>

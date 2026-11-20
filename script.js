@@ -68,6 +68,10 @@ if (loginForm) {
         setTimeout(() => {
           if (data.user.role === 'farmer') {
             window.location.href = 'farmer-dashboard.html';
+          } else if (data.user.role === 'delivery_partner') {
+            window.location.href = 'delivery-dashboard.html';
+          } else if (data.user.role === 'admin' || data.user.role === 'super_admin') {
+            window.location.href = 'admin-dashboard.html';
           } else {
             window.location.href = 'buyer-dashboard.html';
           }

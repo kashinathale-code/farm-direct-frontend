@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delivery Partner Console — Farm Direct</title>
+  <meta name="description" content="Dedicated delivery driver portal for Farm Direct. Manage pickups, update live route status, and share GPS tracking.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="style.css">
+  <!-- Leaflet CSS for Map Preview -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <style>
+    .driver-status-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .driver-badge-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .driver-badge-live.active {
+      background: #DCFCE7;
+      color: #15803D;
+      border: 1px solid #86EFAC;
+    }
+    .driver-badge-live.inactive {
+      background: #F1F5F9;
+      color: #64748B;
+      border: 1px solid #CBD5E1;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #15803D;
+      display: inline-block;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.8; }
+    }
+    .delivery-order-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: var(--transition);
+    }
+    .delivery-order-card:hover {
+      border-color: #D97706;
+      box-shadow: var(--shadow-md);
+    }
+    .delivery-step-btn {
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition);
+    }
+    #deliveryMap {
+      height: 280px;
+      width: 100%;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      margin-top: 14px;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body class="dashboard-body">
+  <div class="dashboard-layout">
+    
+    <!-- Mobile Drawer Backdrop -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- Fixed Left Sidebar -->
+    <aside class="app-sidebar" id="appSidebar">
+      <!-- Sidebar Brand Header -->
+      <div class="sidebar-header">
+        <a href="delivery-dashboard.html" class="brand-link">
+          <div class="brand-icon" style="background:#D97706;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <rect x="1" y="3" width="15" height="13"></rect>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+              <circle cx="5.5" cy="18.5" r="2.5"></circle>
+              <circle cx="18.5" cy="18.5" r="2.5"></circle>
+            </svg>
+          </div>
+          <div class="brand-meta">
+            <span class="brand-title">Farm Direct</span>
+            <span class="brand-tagline">Logistics Partner</span>
+          </div>
+        </a>
+        <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Collapse / Expand Sidebar" aria-label="Toggle sidebar width">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="sidebar-nav">
+        <div class="nav-group">
+          <span class="nav-group-label">Deliveries</span>
+          
+          <button class="nav-item active" id="navDriverActive" onclick="showDriverSection('driverActiveView', 'Active Shipments', 'navDriverActive')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="3" width="15" height="13"></rect>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+              </svg>
+            </span>
+            <span class="nav-item-label">Active Shipments</span>
+            <span class="nav-item-badge" id="activeShipmentBadge">0</span>
+          </button>
+
+          <button class="nav-item" id="navDriverAvailable" onclick="showDriverSection('driverAvailableView', 'Available Pickup Orders', 'navDriverAvailable')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+              </svg>
+            </span>
+            <span class="nav-item-label">Available Orders</span>
+          </button>
+
+          <button class="nav-item" id="navDriverCompleted" onclick="showDriverSection('driverCompletedView', 'Completed Trips & History', 'navDriverCompleted')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </span>
+            <span class="nav-item-label">Delivery History</span>
+          </button>
+        </div>
+
+        <div class="nav-group">
+          <span class="nav-group-label">Support</span>
+
+          <button class="nav-item" id="navDriverSupport" onclick="showDriverSection('driverSupportView', 'Report Issue or Dispute', 'navDriverSupport')">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </span>
+            <span class="nav-item-label">Report Issue</span>
+          </button>
+        </div>
+      </nav>
+
+      <!-- Sidebar Footer / Logout -->
+      <div class="sidebar-footer" style="padding: 16px; border-top: 1px solid var(--border);">
+        <button class="btn-secondary" style="width:100%;" onclick="handleDriverLogout()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span style="margin-left:8px;">Sign Out</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Shell -->
+    <div class="dashboard-main">
+      <!-- Top Navbar -->
+      <header class="top-nav">
+        <div class="nav-left">
+          <button class="mobile-toggle" id="mobileMenuBtn" aria-label="Toggle navigation drawer">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div class="page-title-wrap">
+            <h1 class="page-title" id="driverPageTitle">Active Shipments</h1>
+            <div class="breadcrumb">
+              <a href="delivery-dashboard.html">Fleet</a>
+              <span class="sep">/</span>
+              <span id="driverBreadcrumb">Active Shipments</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-right">
+          <!-- Language Selector -->
+          <div class="lang-selector-wrap" title="Select Language">
+            <svg class="lang-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            <select class="fd-language-selector" id="languageSelect" onchange="FD_I18N.setLanguage(this.value)">
+              <option value="en">English</option>
+              <option value="hi">हिन्दी (Hindi)</option>
+              <option value="mr">मराठी (Marathi)</option>
+            </select>
+          </div>
+
+          <!-- Driver Profile Badge -->
+          <div class="user-profile-badge" style="display:flex; align-items:center; gap:8px;">
+            <div style="text-align:right;">
+              <strong id="driverPartnerName" style="font-size:0.9rem; display:block;">Partner Driver</strong>
+              <span style="font-size:0.75rem; color:#B45309;" id="driverVehicleSummary">Mini Truck</span>
+            </div>
+            <div style="width:38px; height:38px; border-radius:50%; background:#D97706; color:#FFF; display:flex; align-items:center; justify-content:center; font-weight:700;">
+              🚚
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Body Container -->
+      <main class="content-container">
+        
+        <!-- LIVE GPS TRACKING CONTROLLER CARD -->
+        <div class="driver-status-card">
+          <div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+              <h3 style="margin:0;">Live Location Broadcast</h3>
+              <span class="driver-badge-live inactive" id="gpsStatusBadge">
+                <span class="pulse-dot" style="background:#94A3B8;"></span> Offline
+              </span>
+            </div>
+            <p style="margin:0; font-size:0.88rem; color:var(--ink-soft);">
+              Share real-time GPS telemetry so buyers and farmers can see live delivery milestones on their tracking map.
+            </p>
+            <div id="gpsCoordsText" style="font-size:0.8rem; font-family:monospace; color:var(--ink-muted); margin-top:4px;">
+              GPS: Standby
+            </div>
+          </div>
+          <div>
+            <button class="btn-primary" id="btnToggleGps" onclick="toggleGpsTracking()" style="background:#D97706; border-color:#B45309;">
+              Start Sharing Live GPS
+            </button>
+          </div>
+        </div>
+
+        <!-- SECTION 1: ACTIVE SHIPMENTS -->
+        <section id="driverActiveView" class="dashboard-view active">
+          <div id="activeShipmentsList">
+            <p style="text-align:center; padding:30px; color:var(--ink-soft);">Loading assigned deliveries...</p>
+          </div>
+
+          <!-- Interactive Trip Map Preview -->
+          <div class="card" style="margin-top:20px;">
+            <div class="card-header">
+              <h3>Live Navigation Route Map</h3>
+              <p>Visual route map between pickup farm, current vehicle location, and delivery destination.</p>
+            </div>
+            <div class="card-body">
+              <div id="deliveryMap"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 2: AVAILABLE PICKUP ORDERS -->
+        <section id="driverAvailableView" class="dashboard-view">
+          <div class="card">
+            <div class="card-header">
+              <h3>Orders Ready for Delivery Assignment</h3>
+              <p>Fresh farm orders confirmed by farmers that are waiting for delivery partner pickup.</p>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="availableOrdersTable">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Produce</th>
+                      <th>Pickup Location</th>
+                      <th>Delivery Destination</th>
+                      <th>Total Value</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="6" style="text-align:center; padding:20px;">Loading available orders...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 3: COMPLETED TRIPS -->
+        <section id="driverCompletedView" class="dashboard-view">
+          <div class="card">
+            <div class="card-header">
+              <h3>Delivered Trips History</h3>
+              <p>Archive of fulfilled shipments and delivery confirmations.</p>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="completedTripsTable">
+                  <thead>
+                    <tr>
+                      <th>Assignment ID</th>
+                      <th>Order ID</th>
+                      <th>Produce</th>
+                      <th>Delivered To</th>
+                      <th>Delivered At</th>
+                      <th>Proof Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="6" style="text-align:center; padding:20px;">Loading trip history...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 4: SUPPORT & REPORT ISSUE -->
+        <section id="driverSupportView" class="dashboard-view">
+          <div class="card" style="max-width:600px; margin:0 auto;">
+            <div class="card-header">
+              <h3>Report Delivery or Field Issue</h3>
+              <p>Alert platform support regarding road closures, vehicular breakdown, or customer unavailability.</p>
+            </div>
+            <div class="card-body">
+              <form id="driverIssueForm">
+                <div class="input-group">
+                  <label class="field-label" for="issueOrderId">Related Order ID</label>
+                  <input type="number" id="issueOrderId" placeholder="e.g. 102" required>
+                </div>
+                <div class="input-group" style="margin-top:14px;">
+                  <label class="field-label" for="issueCategory">Issue Type</label>
+                  <select id="issueCategory" class="fd-select">
+                    <option value="transit_delay">Severe Traffic / Weather Delay</option>
+                    <option value="vehicle_breakdown">Vehicle Breakdown</option>
+                    <option value="recipient_unavailable">Customer / Recipient Not Reachable</option>
+                    <option value="incorrect_address">Incorrect or Incomplete Delivery Address</option>
+                    <option value="produce_damage">Accidental Produce Spoilage / Damage</option>
+                  </select>
+                </div>
+                <div class="input-group" style="margin-top:14px;">
+                  <label class="field-label" for="issueDescription">Details & Current Status</label>
+                  <textarea id="issueDescription" rows="4" placeholder="Describe the situation and your current GPS location..." required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px;"></textarea>
+                </div>
+                <div style="margin-top:20px;">
+                  <button type="submit" class="btn-primary" id="btnSubmitDriverIssue">Submit Urgent Ticket</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- PROOF OF DELIVERY (POD) MODAL -->
+  <div class="modal-overlay" id="proofModal" style="display:none;">
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-header">
+        <h3>Complete Delivery & Proof</h3>
+        <button class="modal-close-btn" onclick="closeProofModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.9rem; color:var(--ink-soft); margin-bottom:12px;">
+          Confirm successful handover of fresh produce to the recipient.
+        </p>
+        <input type="hidden" id="proofAssignmentId">
+        <div class="input-group">
+          <label class="field-label" for="recipientName">Recipient Name *</label>
+          <input type="text" id="recipientName" placeholder="Full name of person receiving produce" required>
+        </div>
+        <div class="input-group" style="margin-top:14px;">
+          <label class="field-label" for="deliveryNotes">Handover Notes / Condition</label>
+          <input type="text" id="deliveryNotes" placeholder="e.g. Packages intact, weight verified">
+        </div>
+        <div class="input-group" style="margin-top:14px;">
+          <label class="field-label" for="deliveryPhotoProof">Photo of Handover / Goods (Optional)</label>
+          <input type="file" id="deliveryPhotoProof" accept="image/*" class="fd-file-input">
+        </div>
+        <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn-secondary" onclick="closeProofModal()">Cancel</button>
+          <button type="button" class="btn-primary" id="btnSubmitProof" onclick="submitProofOfDelivery()">Confirm Delivery</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS for Map -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="config.js"></script>
+  <script src="ui.js"></script>
+  <script src="i18n.js"></script>
+  <script src="delivery-dashboard.js"></script>
+</body>
+</html>

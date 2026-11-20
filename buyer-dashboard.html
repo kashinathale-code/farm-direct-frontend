@@ -7,6 +7,51 @@
   <meta name="description" content="Discover farm-fresh produce directly from verified farmers, compare prices, negotiate custom bids, and pool bulk group buys.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="style.css">
+  <!-- Leaflet CSS for Live Order Tracking -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <style>
+    .timeline-8-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 8px;
+      margin: 18px 0;
+    }
+    .timeline-stage-card {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 8px;
+      text-align: center;
+      font-size: 11.5px;
+      color: var(--ink-muted);
+      position: relative;
+    }
+    .timeline-stage-card.completed {
+      background: #DCFCE7;
+      border-color: #86EFAC;
+      color: #15803D;
+      font-weight: 600;
+    }
+    .timeline-stage-card.current {
+      background: #FEF3C7;
+      border-color: #FCD34D;
+      color: #B45309;
+      font-weight: 700;
+      box-shadow: 0 0 0 2px #F59E0B;
+    }
+    .driver-info-box {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      background: #F8FAFC;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      margin-top: 14px;
+      gap: 12px;
+    }
+  </style>
 </head>
 <body class="dashboard-body">
   <div class="dashboard-layout">
@@ -499,8 +544,14 @@
         <section id="trackOrdersView" class="page-view">
           <div class="section-title-row">
             <div>
-              <h2>Order Fulfillment Status Tracker</h2>
-              <p>Select any active purchase to inspect its real-time farm-to-doorstep timeline audit trail.</p>
+              <h2>Live Delivery & Fulfillment Tracker</h2>
+              <p>Track your farm shipment across all 8 milestones with real-time GPS telemetry from assigned delivery partners.</p>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <span id="liveTrackingAutoRefreshIndicator" style="display:none; font-size:12px; color:#15803D; font-weight:600;">
+                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#15803D; margin-right:4px;"></span>
+                Live GPS Sync Active (15s)
+              </span>
             </div>
           </div>
 
@@ -513,7 +564,7 @@
             </div>
 
             <div id="dedicatedTrackingOutput">
-              <div class="notif-empty">Select an order above to view its live fulfillment stepper.</div>
+              <div class="notif-empty">Select an order above to view its live fulfillment stepper and real-time route map.</div>
             </div>
           </div>
         </section>
@@ -1077,6 +1128,48 @@
     </div>
   </div>
 
+  <!-- BUYER DISPUTE & COMPLAINT MODAL -->
+  <div id="buyerDisputeModal" class="modal-overlay" style="display:none">
+    <div class="modal-box" style="max-width:520px;">
+      <h3>Report Delivery or Quality Issue</h3>
+      <p style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">
+        Raise an official dispute ticket with platform management for resolution or refund assistance.
+      </p>
+      <form id="buyerDisputeForm" onsubmit="handleBuyerDisputeSubmit(event)">
+        <input type="hidden" id="disputeOrderId">
+
+        <div class="input-group">
+          <label class="field-label" for="disputeCategory">Issue Category *</label>
+          <select id="disputeCategory" required>
+            <option value="quality_mismatch">Produce Quality Mismatch / Spoilage</option>
+            <option value="transit_delay">Severe Delivery Delay</option>
+            <option value="damaged_in_transit">Damaged or Crushed During Transit</option>
+            <option value="wrong_quantity">Incorrect Weight / Quantity Received</option>
+            <option value="billing_dispute">Payment or Billing Dispute</option>
+            <option value="other">Other Concern</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label class="field-label" for="disputeSubject">Subject *</label>
+          <input type="text" id="disputeSubject" placeholder="e.g. Produce damaged during transit" required>
+        </div>
+
+        <div class="input-group">
+          <label class="field-label" for="disputeDescription">Detailed Explanation *</label>
+          <textarea id="disputeDescription" rows="3" placeholder="Provide full context regarding the shipment..." required></textarea>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+          <button type="submit" class="btn-primary" style="flex:1;">Submit Dispute Ticket</button>
+          <button type="button" class="btn-secondary" onclick="closeBuyerDisputeModal()" style="flex:1;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <!-- Scripts -->
   <script src="config.js"></script>
   <script src="ui.js"></script>

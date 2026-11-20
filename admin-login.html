@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal Login — Farm Direct</title>
+  <meta name="description" content="Secure administrative access for Farm Direct platform management, user moderation, order oversight, and audit logs.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-auth-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: rgba(220, 38, 38, 0.1);
+      color: #DC2626;
+      border: 1px solid rgba(220, 38, 38, 0.25);
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+    .admin-auth-card {
+      border-top: 4px solid #143D2B;
+    }
+  </style>
+</head>
+<body class="auth-page">
+  <!-- Compact Auth Header -->
+  <header class="auth-compact-header">
+    <div class="auth-compact-container">
+      <a href="index.html" class="brand-link" aria-label="Farm Direct Home">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 2a10 10 0 0 1 10 10c0 5.5-4.5 10-10 10S2 17.5 2 12A10 10 0 0 1 12 2z"/>
+            <path d="M7 13c3 0 7-2 9-8-2 6-4 9-9 9z"/>
+            <path d="M12 22V12"/>
+          </svg>
+        </div>
+        <div class="brand-meta">
+          <span class="brand-title">Farm Direct</span>
+          <span class="brand-tagline">Administration Console</span>
+        </div>
+      </a>
+      <div class="auth-compact-actions">
+        <a href="index.html" class="nav-link" data-i18n="common.home">Home</a>
+        <div class="lang-selector-wrap" title="Select Language">
+          <svg class="lang-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          <select class="fd-language-selector" id="languageSelect" aria-label="Select Language" onchange="FD_I18N.setLanguage(this.value)">
+            <option value="en">English</option>
+            <option value="hi">हिन्दी (Hindi)</option>
+            <option value="mr">मराठी (Marathi)</option>
+          </select>
+        </div>
+        <a href="login.html" class="nav-button">User Login</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="auth-main-content">
+    <div class="auth-card admin-auth-card">
+      <div class="auth-header">
+        <div class="admin-auth-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>Restricted Portal</span>
+        </div>
+
+        <h2>Platform Administration</h2>
+        <p class="tagline">Sign in with authorized administrator credentials</p>
+      </div>
+
+      <form id="adminLoginForm">
+        <div class="input-group">
+          <label class="field-label" for="adminEmail">Administrator Email</label>
+          <input type="email" id="adminEmail" placeholder="admin@farmdirect.internal" required autocomplete="email">
+        </div>
+
+        <div class="input-group">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label class="field-label" for="adminPassword" style="margin-bottom:0;">Password</label>
+          </div>
+          <div class="password-input-wrap" style="margin-top:6px;">
+            <input type="password" id="adminPassword" placeholder="Enter secure password" required autocomplete="current-password">
+            <button type="button" class="password-toggle-btn" id="toggleAdminPasswordBtn" aria-label="Toggle password visibility">
+              <svg id="adminEyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="adminLoginBtn" style="margin-top:14px; width:100%;">
+          Authenticate Administrator
+        </button>
+        
+        <p class="auth-switch" style="margin-top:20px; font-size:0.85rem; color:var(--ink-soft);">
+          Are you a buyer or farmer? <a href="login.html">Sign in here</a><br>
+          Delivery partner? <a href="delivery-login.html">Driver portal</a>
+        </p>
+      </form>
+    </div>
+  </main>
+
+  <footer class="auth-compact-footer">
+    <div class="auth-footer-content">
+      <span>© 2026 Farm Direct. System Security & Access Monitored.</span>
+      <span class="footer-sep">·</span>
+      <a href="index.html">Home</a>
+      <span class="footer-sep">·</span>
+      <a href="login.html">User Portal</a>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="ui.js"></script>
+  <script src="i18n.js"></script>
+  <script>
+    // Password toggle
+    const toggleBtn = document.getElementById('toggleAdminPasswordBtn');
+    const pwdInput = document.getElementById('adminPassword');
+    if (toggleBtn && pwdInput) {
+      toggleBtn.addEventListener('click', () => {
+        const isPwd = pwdInput.type === 'password';
+        pwdInput.type = isPwd ? 'text' : 'password';
+      });
+    }
+
+    // Admin login form handler
+    const adminForm = document.getElementById('adminLoginForm');
+    if (adminForm) {
+      adminForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('adminEmail').value.trim();
+        const password = document.getElementById('adminPassword').value;
+        const btn = document.getElementById('adminLoginBtn');
+
+        setLoading(btn, true);
+
+        try {
+          const authUrl = (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : (window.API_URL || 'http://localhost:5000/api')) + '/auth/login';
+          const res = await fetch(authUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            const role = data.user && data.user.role;
+            if (role !== 'admin' && role !== 'super_admin') {
+              showToast('Access denied: Account is not authorized for administration portal', 'error');
+              setLoading(btn, false);
+              return;
+            }
+
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            showToast('Administrator authenticated. Loading console...', 'success');
+            setTimeout(() => {
+              window.location.href = 'admin-dashboard.html';
+            }, 800);
+          } else {
+            showToast(data.error || 'Authentication failed', 'error');
+            setLoading(btn, false);
+          }
+        } catch (err) {
+          console.error('Admin login error:', err);
+          showToast('Could not reach backend service. Check connection.', 'error');
+          setLoading(btn, false);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
