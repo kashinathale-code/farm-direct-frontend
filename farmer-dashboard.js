@@ -2073,3 +2073,13 @@ window.loadFarmerProfile = async function() {
     console.warn('loadFarmerProfile fetch error:', e.message);
   }
 };
+
+// Hash-based deep linking (e.g. #weatherView or #marketPricesView)
+window.addEventListener('DOMContentLoaded', () => {
+  const hash = window.location.hash.replace('#', '');
+  if (hash && document.getElementById(hash)) {
+    const navBtn = document.querySelector(`[onclick*="${hash}"]`);
+    const navId = navBtn ? navBtn.id : null;
+    showSection(hash, hash, navId);
+  }
+});

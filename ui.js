@@ -545,10 +545,10 @@ async function handleAssistantQuery(query, streamElementId = 'aiMessageStream') 
 // PUBLIC NAVIGATION CONTROLLER (HAMBURGER & MOBILE DRAWER)
 // ============================================================================
 function initPublicNav() {
-  const toggleBtn = document.getElementById('publicNavToggle');
+  const toggleBtn = document.getElementById('publicNavToggle') || document.getElementById('navToggleBtn');
   const drawer = document.getElementById('publicNavDrawer');
   const backdrop = document.getElementById('publicNavBackdrop');
-  const closeBtn = document.getElementById('publicNavClose');
+  const closeBtn = document.getElementById('publicNavClose') || document.getElementById('drawerCloseBtn');
   if (!toggleBtn || !drawer) return;
 
   function openNav() {

@@ -564,22 +564,33 @@ const FD_Weather = (function () {
   // Location Search & Selection Modal
   // --------------------------------------------------------------------------
 
+  function closeLocationModal() {
+    const modal = document.getElementById('weatherLocationModal');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+  }
+
   function openLocationModal() {
     let modal = document.getElementById('weatherLocationModal');
     if (!modal) {
       modal = document.createElement('div');
       modal.id = 'weatherLocationModal';
-      modal.className = 'modal-backdrop';
+      modal.className = 'modal-overlay modal-backdrop';
       document.body.appendChild(modal);
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeLocationModal();
+      });
     }
 
     const t = window.t || ((k, p, fb) => fb || k);
 
     modal.innerHTML = `
-      <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-box modal-card" style="max-width: 480px;">
         <div class="modal-header">
           <h3>📍 ${t('weather.change_location', {}, 'Select Farm Location')}</h3>
-          <button class="modal-close-btn" onclick="document.getElementById('weatherLocationModal').classList.remove('active')">✕</button>
+          <button type="button" class="modal-close-btn" onclick="FD_Weather.closeLocationModal()" aria-label="Close modal">✕</button>
         </div>
         <div class="modal-body">
           <p style="font-size:13px; color:var(--ink-soft); margin-bottom:12px;">
@@ -591,7 +602,7 @@ const FD_Weather = (function () {
           </div>
 
           <div style="margin-bottom:12px;">
-            <button class="btn-secondary" style="width:100%;" onclick="FD_Weather.detectCurrentLocation()">
+            <button type="button" class="btn-secondary" style="width:100%;" onclick="FD_Weather.detectCurrentLocation()">
               🎯 ${t('weather.detect_location', {}, 'Use My Current Location')}
             </button>
           </div>
@@ -603,6 +614,7 @@ const FD_Weather = (function () {
       </div>
     `;
 
+    modal.style.display = 'flex';
     modal.classList.add('active');
 
     const input = document.getElementById('weatherSearchInput');
@@ -727,6 +739,7 @@ const FD_Weather = (function () {
     renderOverviewWeatherCard,
     renderExtendedWeatherView,
     openLocationModal,
+    closeLocationModal,
     detectCurrentLocation,
     selectLocation,
     refreshOverviewWeather

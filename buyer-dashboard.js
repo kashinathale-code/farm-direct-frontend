@@ -1834,3 +1834,13 @@ window.closeFarmerProfileModal = function() {
   const modal = document.getElementById('farmerProfileModal');
   if (modal) modal.style.display = 'none';
 };
+
+// Hash-based deep linking (e.g. #buyerWishlistView or #buyerMarketPricesView)
+window.addEventListener('DOMContentLoaded', () => {
+  const hash = window.location.hash.replace('#', '');
+  if (hash && document.getElementById(hash)) {
+    const navBtn = document.querySelector(`[onclick*="${hash}"]`);
+    const navId = navBtn ? navBtn.id : null;
+    showSection(hash, hash, navId);
+  }
+});
